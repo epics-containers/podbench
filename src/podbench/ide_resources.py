@@ -42,9 +42,14 @@ def quantity(value: str) -> Fraction:
 
 
 def _format(value: Fraction, resource: str) -> str:
-    scale = 1000 if resource == "cpu" else 1
-    rounded = -(-(value * scale).numerator // (value * scale).denominator)
-    return f"{rounded}m" if resource == "cpu" else str(rounded)
+    if resource == "cpu":
+        milli = value * 1000
+        return f"{-(-milli.numerator // milli.denominator)}m"
+    count = -(-value.numerator // value.denominator)
+    for unit, size in (("Gi", 1024**3), ("Mi", 1024**2), ("Ki", 1024)):
+        if count % size == 0:
+            return f"{count // size}{unit}"
+    return str(count)
 
 
 def ensure_headroom(kube: Kubectl, name: str, target: str, timeout: float) -> None:
@@ -140,7 +145,11 @@ def ensure_headroom(kube: Kubectl, name: str, target: str, timeout: float) -> No
         for key, value in values.items()
     )
     if changed:
-        console.print(f"Reserving VS Code headroom on {name}/{target}: {desired}")
+        summary = "; ".join(
+            f"{kind} " + " ".join(f"{key}={value}" for key, value in values.items())
+            for kind, values in desired.items()
+        )
+        console.print(f"Reserving VS Code headroom on {name}/{target}: {summary}")
         kube.run(
             "patch",
             "pod",
