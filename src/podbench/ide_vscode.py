@@ -102,6 +102,8 @@ def open_vscode(
     uri = f"vscode-remote://ssh-remote+{wiring.alias}{path}"
     bootstrap = f"vscode-remote://ssh-remote+{wiring.alias}"
     bootstrap += quote(prepared["bootstrap"], safe="/")
+    # A plain folder opens first: the remote server must run before extensions
+    # can be installed into it, and the workspace file waits for those extensions.
     console.print("Opening VS Code and waiting for its remote server...")
     _run([code, "--new-window", "--folder-uri", bootstrap], timeout=timeout)
     deadline = time.monotonic() + timeout

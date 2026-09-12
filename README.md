@@ -52,7 +52,8 @@ extensions in the seat, and generates an attach launcher for each readable
 application process. Hotfix code at `/podbench/app` is already in the workspace;
 generated files stay in the seat's home, outside your checkout. Rerun after an
 application restart to refresh PIDs. Python is injected only when you start its
-debug launcher; restart the hotfix child afterwards to remove the debugger.
+debug launcher, copied from the seat image (or the hotfix environment) into the
+target's `/tmp`; restart the hotfix child afterwards to remove the debugger.
 Normal ptrace/Yama restrictions still apply.
 
 The live pod gains **4 CPU / 8 GiB of limit headroom**, with **2 CPU / 4 GiB
@@ -65,7 +66,8 @@ while the extra budget lasts until the pod is replaced. No Argo settings change.
 
 Your SSH agent is forwarded and Git name/email are copied to the seat; private
 keys and credential helpers stay local. Use an SSH Git remote to push. Forwarding
-lasts while the SSH connection is alive. The command installs Podbench's SSH
+lasts while the SSH connection is alive, and any process in the pod that runs as
+the seat's UID can use the agent during that time. The command installs Podbench's SSH
 Include if needed; VS Code must use your normal `~/.ssh/config`.
 
 ## Hotfix lifecycle
