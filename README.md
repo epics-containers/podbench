@@ -1,24 +1,46 @@
 # podbench prototype
 
-This branch intentionally keeps two modes and a single seat shape:
+Podbench keeps two modes and a single seat shape:
 
-- podbench attach POD lands a capless ephemeral container using the target
+- podbench attach POD lands an ephemeral container using the target
   container's UID, GID and seccomp profile when Kubernetes reports them.
+  Non-root seats drop all capabilities; root seats request four SSH capabilities.
 - podbench hotfix manages a source checkout on one persistent claim per
   single-replica workload.
 
 The image contains a shell, Git, uv, gdb, strace and basic process tools.
-Attach prints an SSH command carried by `kubectl exec` (no pod network), the
-`~/.ssh/config` Include line, and a raw exec fallback. Images pull by default.
+Attach prints an SSH command carried by `kubectl exec` (no pod network).
+Use `--verbose` to also print a raw exec fallback. Images pull by default.
 Inside a seat, `podbench debug` shows the process tree and attaches GDB to the
 selected process using its container filesystem. `podbench debug --python PID`
 instead uses GDB to inject debugpy on port 5678; restart the hotfix child after
-disconnecting to remove the injected debugger.
+disconnecting to remove the injected debugger. From your workstation, run
+`kubectl port-forward -n NAMESPACE pod/POD 5678:5678` and connect your IDE's
+Python attach configuration to `127.0.0.1:5678`. Exec liveness probes remain
+held during the debug session; restart clears the hold.
 `podbench status` shows attached seats and hotfix state together.
-Development builds use `ghcr.io/epics-containers/podbench:prototype-attach-hotfix`;
-override that with `--image` or `PODBENCH_IMAGE`.
+Main publishes `ghcr.io/epics-containers/podbench:prototype-attach-hotfix`;
+override that with `--image` or `PODBENCH_IMAGE`. Use `attach --new` to pick up
+a rebuilt image when a seat already exists.
 Run `podbench doctor` to check local and cluster prerequisites; `--fix` only
 creates the SSH config directory and installs that Include safely.
+
+## Get connected
+
+Install the workstation CLI from main:
+
+    uv tool install git+https://github.com/epics-containers/podbench@main
+
+You need `kubectl` configured for your cluster and an SSH key pair (by default `~/.ssh/id_ed25519`;
+use `--identity` to select another).
+
+    podbench doctor --fix -n NAMESPACE
+    podbench attach POD --target CONTAINER -n NAMESPACE
+
+Run the printed SSH command, or select its host alias in VS Code Remote-SSH.
+Aliases pin the context and kubeconfig paths used at attach time.
+`--target` defaults to the pod's first container. Hotfix commands call the same
+option `--container`; use it consistently for pods with multiple containers.
 
 ## Hotfix lifecycle
 
@@ -36,14 +58,19 @@ creates the SSH config directory and installs that Include safely.
        podbench hotfix values --app RELEASE --from-pod POD -n NAMESPACE
 
    For wrapper charts, use `--values-prefix KEY` to nest the workload settings
-   under their chart key. The claim settings remain at the top level.
+   under their chart key. The claim settings remain at the top level. Use
+   `--entrypoint` to select code under `/podbench/app` when the original command
+   still points to the image's installed application.
 
 3. Initialize its claim:
 
        podbench hotfix init POD --repo URL -n NAMESPACE
 
    Python projects are synced with uv and gain debugpy for on-demand injection.
-   Other repositories are cloned without a dependency-install step.
+   Other repositories are cloned without a dependency-install step. The claim
+   directory must be empty apart from `lost+found`: init refuses to replace
+   a checkout. After a failed init, inspect and back up its contents before
+   clearing the directory and retrying.
 
    Generated values keep liveness probes but extend non-exec probe failure
    thresholds for the two-minute restart window.
@@ -52,6 +79,9 @@ creates the SSH config directory and installs that Include safely.
 
        podbench hotfix restart POD -n NAMESPACE
        podbench hotfix status -n NAMESPACE
+
+   Add `--reinstall` to restart after changing Python dependencies. This requires
+   a running seat attached to the same application container.
 
 5. Remove the generated workload values, redeploy, then retire the PVC:
 

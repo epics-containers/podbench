@@ -2,8 +2,7 @@ name: CI
 
 on:
   push:
-    # PROTOTYPE: remove this branch when attach returns to beta-tag releases.
-    branches: [main, prototype/attach-hotfix]
+    branches: [main]
     tags: ['*']
   pull_request:
 

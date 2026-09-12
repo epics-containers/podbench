@@ -14,24 +14,28 @@ WRAPPER_NAME = "podbench-wrapper"
 WRAPPER_PATH = "/app/.venv/bin/blueapi"
 
 
-def workload(
-    pod: dict[str, Any], app: str, container: str | None, gid: int | None
-) -> list[str]:
-    chosen = target_container_name(pod, container)
-    _, discovered_gid = target_uid_gid(pod, chosen)
-    gid = gid if gid is not None else discovered_gid
-    if gid is None:
-        raise HotfixError("the target gid is not reported; pass --gid")
-    probe = [
+def _probe(*, allow_hold: bool) -> list[str]:
+    guard = "[ -e /tmp/podbench-hold ] || " if allow_hold else ""
+    return [
         "exec:",
         "  command:",
         "    - bash",
         "    - -c",
         "    - >-",
-        "      [ -e /tmp/podbench-hold ] || exec /app/.venv/bin/python -c",
+        f"      {guard}exec /app/.venv/bin/python -c",
         "      'import urllib.request;",
         '      urllib.request.urlopen("http://127.0.0.1:8000/healthz", timeout=1)\'',
     ]
+
+
+def workload(
+    pod: dict[str, Any], app: str, container: str | None, gid: int | None
+) -> list[str]:
+    chosen = target_container_name(pod, container or "blueapi")
+    _, discovered_gid = target_uid_gid(pod, chosen)
+    gid = gid if gid is not None else discovered_gid
+    if gid is None:
+        raise HotfixError("the target gid is not reported; pass --gid")
     lines = [
         "debug:",
         "  enabled: false",
@@ -53,13 +57,13 @@ def workload(
         "    subPath: blueapi",
         "livenessProbe:",
         "  httpGet: null",
-        *[f"  {line}" for line in probe],
+        *[f"  {line}" for line in _probe(allow_hold=True)],
         "readinessProbe:",
         "  httpGet: null",
-        *[f"  {line}" for line in probe],
+        *[f"  {line}" for line in _probe(allow_hold=False)],
         "startupProbe:",
         "  httpGet: null",
-        *[f"  {line}" for line in probe],
+        *[f"  {line}" for line in _probe(allow_hold=True)],
     ]
     return lines
 

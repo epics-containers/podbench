@@ -119,7 +119,7 @@ def _mapping_bounds(lines: list[str], key: str) -> tuple[int, int]:
         (
             i
             for i, line in enumerate(lines)
-            if re.fullmatch(rf"{re.escape(key)}:\s*", line)
+            if re.fullmatch(rf"{re.escape(key)}:\s*(?:#.*)?", line)
         ),
         None,
     )

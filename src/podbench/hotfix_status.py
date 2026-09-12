@@ -2,8 +2,16 @@
 
 from __future__ import annotations
 
-from .hotfix_core import MANIFEST, HotfixError, claim_name, exec_target, resolve_target
-from .kubectl import Kubectl
+from .hotfix_core import (
+    MANIFEST,
+    HotfixError,
+    claim_name,
+    exec_target,
+    load_json,
+    resolve_target,
+)
+from .kubectl import Kubectl, KubectlError
+from .launcher import LauncherError
 from .model import HOTFIX_APP_PATH, HOTFIX_CLAIM_VOLUME, HOTFIX_HOLD_PATH, as_dict
 
 
@@ -16,7 +24,8 @@ def _containers(pod: dict) -> list[dict]:
     )
 
 
-def hotfix_container(pod: dict) -> str | None:
+def hotfix_containers(pod: dict) -> list[str]:
+    names: list[str] = []
     for container in _containers(pod):
         mounts = container.get("volumeMounts", [])
         if not isinstance(mounts, list):
@@ -28,44 +37,54 @@ def hotfix_container(pod: dict) -> str | None:
             for mount in mounts
         ):
             name = container.get("name")
-            return name if isinstance(name, str) else None
-    return None
+            if isinstance(name, str):
+                names.append(name)
+    return names
 
 
 def hotfix_state(kube: Kubectl, pod: dict, container: str) -> tuple[str, bool]:
     name = as_dict(pod.get("metadata")).get("name")
     if not isinstance(name, str):
         return "unreachable", False
-    target, _ = resolve_target(kube, name, container)
-    manifest = exec_target(kube, target, f"cat {MANIFEST}", check=False)
-    held = (
-        exec_target(kube, target, f"test -e {HOTFIX_HOLD_PATH}", check=False).returncode
-        == 0
-    )
-    state = "initialized" if manifest.returncode == 0 else "ready for init"
-    if held:
-        state += ", HELD"
-    return state, not held
+    try:
+        target, _ = resolve_target(kube, name, container)
+        result = exec_target(
+            kube,
+            target,
+            f"test -d {HOTFIX_APP_PATH} || exit 1; "
+            f"if [ -f {MANIFEST} ]; then echo initialized; "
+            "else echo 'ready for init'; fi; "
+            f"if [ -e {HOTFIX_HOLD_PATH} ]; then echo HELD; fi",
+        )
+    except (HotfixError, LauncherError, KubectlError, ValueError) as error:
+        return f"unavailable: {error}", False
+    state = result.stdout.strip().splitlines()
+    return ", ".join(state), "HELD" not in state
 
 
 def status(kube: Kubectl) -> tuple[list[str], bool]:
     lines: list[str] = []
     healthy = True
     for pod in kube.list_pods():
-        container = hotfix_container(pod)
         name = as_dict(pod.get("metadata")).get("name")
-        if not container or not isinstance(name, str):
+        if not isinstance(name, str):
             continue
-        state, state_healthy = hotfix_state(kube, pod, container)
-        healthy = healthy and state_healthy
-        lines.append(f"{name}/{container}: {claim_name(pod) or '?'} ({state})")
+        for container in hotfix_containers(pod):
+            state, state_healthy = hotfix_state(kube, pod, container)
+            healthy = healthy and state_healthy
+            lines.append(f"{name}/{container}: {claim_name(pod) or '?'} ({state})")
     return lines or [f"no hotfixes in namespace {kube.namespace}"], healthy
 
 
 def _mounting_pods(kube: Kubectl, claim: str) -> list[str]:
     mounted: list[str] = []
     for pod in kube.list_pods():
-        if claim_name(pod) == claim:
+        volumes = as_dict(pod.get("spec")).get("volumes", [])
+        if any(
+            as_dict(as_dict(volume).get("persistentVolumeClaim")).get("claimName")
+            == claim
+            for volume in volumes
+        ):
             name = as_dict(pod.get("metadata")).get("name")
             if isinstance(name, str):
                 mounted.append(name)
@@ -76,12 +95,16 @@ def retire(
     kube: Kubectl, target_or_claim: str, *, delete_claim: bool = False
 ) -> tuple[list[str], bool]:
     pod_name = target_or_claim.removeprefix("pod/")
-    probe = kube.run("get", "pod", pod_name, "-o", "json", check=False)
+    probe = (
+        None
+        if target_or_claim.startswith("pvc/")
+        else kube.run("get", "pod", pod_name, "-o", "json", "--ignore-not-found")
+    )
     claim = target_or_claim.removeprefix("pvc/")
-    if probe.returncode == 0:
-        pod = __import__("json").loads(probe.stdout)
+    if probe and probe.stdout.strip():
+        pod = load_json(probe.stdout)
         claim = claim_name(pod) or ""
-        if hotfix_container(pod):
+        if hotfix_containers(pod):
             return (
                 [
                     f"{pod_name} is still wired for hotfix",
@@ -96,8 +119,8 @@ def retire(
     holders = _mounting_pods(kube, claim)
     if holders:
         return ([f"PVC {claim} is still mounted by {', '.join(holders)}"], False)
-    exists = kube.run("get", "pvc", claim, "-o", "name", check=False).returncode == 0
-    if not exists:
+    existing = kube.run("get", "pvc", claim, "-o", "name", "--ignore-not-found")
+    if not existing.stdout.strip():
         return ([f"PVC {claim} is gone; retirement is complete"], True)
     if not delete_claim:
         return (

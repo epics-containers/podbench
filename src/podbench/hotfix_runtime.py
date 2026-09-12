@@ -25,7 +25,7 @@ from .model import (
 
 
 def _seat(kube: Kubectl, target: Target, pod: dict) -> str:
-    current = running_seat(pod)
+    current = running_seat(pod, target=target.container)
     if current:
         return current.name
     with console.status(f"Landing a seat in {target.pod.name}..."):
@@ -85,8 +85,17 @@ def init(
     script = "\n".join(
         [
             "set -euo pipefail",
-            f"find {HOTFIX_APP_PATH} -mindepth 1 -delete",
-            f"git clone {branch}{shlex.quote(repo)} {HOTFIX_APP_PATH}",
+            # A fresh filesystem may contain lost+found. Keep it and refuse
+            # everything else, including an incomplete earlier initialization.
+            f"existing=$(find {HOTFIX_APP_PATH} -mindepth 1 -maxdepth 1 "
+            "! -name lost+found -print -quit)",
+            '[ -z "$existing" ] || { echo "claim is not empty; inspect and back up '
+            'its contents before retrying init" >&2; exit 1; }',
+            f"checkout=$(mktemp -d {HOTFIX_APP_PATH}/.podbench-clone.XXXXXX)",
+            f'git clone {branch}{shlex.quote(repo)} "$checkout"',
+            "shopt -s dotglob nullglob",
+            f'mv -n -- "$checkout"/* {HOTFIX_APP_PATH}/',
+            'rmdir "$checkout"',
             f"install -m 0755 /usr/local/lib/libpodbench-ptrace.so "
             f"{HOTFIX_PTRACE_PATH}",
             f"cd {HOTFIX_APP_PATH}",
@@ -140,6 +149,8 @@ def restart(
     reinstall: bool = False,
     deadline: int = 120,
 ) -> list[str]:
+    if deadline < 1:
+        raise HotfixError("restart deadline must be at least one second")
     target, _ = resolve_target(kube, pod_name, container)
     _manifest(kube, target)
     if reinstall:
@@ -149,10 +160,12 @@ def restart(
             f"{_sync_python()}; "
             "else echo 'no pyproject.toml; nothing to reinstall'; fi"
         )
-        seat = running_seat(kube.get_pod(target.pod.name))
+        seat = running_seat(kube.get_pod(target.pod.name), target=target.container)
         if not seat:
             raise HotfixError(
-                "--reinstall needs a running seat; run podbench attach first"
+                f"--reinstall needs a seat for {target.container}; run podbench "
+                f"attach {target.pod.name} --target {target.container} "
+                f"-n {target.pod.namespace} first"
             )
         _seat_run(kube, target, seat.name, sync, timeout=600.0)
     before = exec_target(kube, target, f"cat {HOTFIX_CHILD_PID_PATH}").stdout.strip()
@@ -180,7 +193,7 @@ def restart(
     )
     exec_target(kube, target, script, timeout=float(deadline + 10))
     after = exec_target(kube, target, f"cat {HOTFIX_CHILD_PID_PATH}").stdout.strip()
-    seat = running_seat(kube.get_pod(target.pod.name))
+    seat = running_seat(kube.get_pod(target.pod.name), target=target.container)
     state = "not measured"
     if seat:
         result = _seat_run(
