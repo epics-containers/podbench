@@ -50,6 +50,14 @@ def _seat_run(
     )
 
 
+def _sync_python() -> str:
+    return (
+        f"UV_PYTHON_INSTALL_DIR={HOTFIX_APP_PATH}/.python "
+        "uv sync --managed-python && "
+        "UV_LINK_MODE=copy uv pip install --python .venv/bin/python debugpy"
+    )
+
+
 def init(
     kube: Kubectl,
     pod_name: str,
@@ -84,8 +92,7 @@ def init(
             f"cd {HOTFIX_APP_PATH}",
             'mkdir -p "$HOME"',
             f"git config --global --add safe.directory {HOTFIX_APP_PATH}",
-            f"[ ! -f pyproject.toml ] || "
-            f"UV_PYTHON_INSTALL_DIR={HOTFIX_APP_PATH}/.python uv sync --managed-python",
+            f"[ ! -f pyproject.toml ] || {{ {_sync_python()}; }}",
             "git rev-parse HEAD",
         ]
     )
@@ -139,8 +146,7 @@ def restart(
         sync = (
             f"cd {HOTFIX_APP_PATH} && "
             "if [ -f pyproject.toml ]; then "
-            f"UV_PYTHON_INSTALL_DIR={HOTFIX_APP_PATH}/.python "
-            "uv sync --managed-python; "
+            f"{_sync_python()}; "
             "else echo 'no pyproject.toml; nothing to reinstall'; fi"
         )
         seat = running_seat(kube.get_pod(target.pod.name))
