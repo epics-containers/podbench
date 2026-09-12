@@ -47,6 +47,12 @@ def _debug(args: Sequence[str]) -> int:
     return main(args)
 
 
+def _status(args: Sequence[str]) -> int:
+    from .status import main
+
+    return main(args)
+
+
 def _build_app() -> typer.Typer:
     app = new_app()
 
@@ -87,6 +93,13 @@ def _build_app() -> typer.Typer:
         context_settings=settings,
         rich_help_panel="Workstation commands",
     )(_forward(_hotfix, "hotfix"))
+    app.command(
+        name="status",
+        help="show attached seats and hotfix workloads",
+        add_help_option=False,
+        context_settings=settings,
+        rich_help_panel="Workstation commands",
+    )(_forward(_status, "status"))
     app.command(
         name="debug",
         help="select a process and attach GDB from inside a seat",

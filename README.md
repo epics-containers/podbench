@@ -12,6 +12,7 @@ Attach prints an SSH command carried by `kubectl exec` (no pod network), the
 `~/.ssh/config` Include line, and a raw exec fallback. Images pull by default.
 Inside a seat, `podbench debug` shows the process tree and attaches GDB to the
 selected process using its container filesystem.
+`podbench status` shows attached seats and hotfix state together.
 Development builds use `ghcr.io/epics-containers/podbench:prototype-attach-hotfix`;
 override that with `--image` or `PODBENCH_IMAGE`.
 Run `podbench doctor` to check local and cluster prerequisites; `--fix` only
@@ -19,10 +20,20 @@ creates the SSH config directory and installs that Include safely.
 
 ## Hotfix lifecycle
 
-1. Add podbench-hotfix-claim as a chart dependency.
-2. Generate and deploy the workload values:
+1. Enable hotfix wiring in an epics-containers service chart, then review and
+   deploy the Git diff:
+
+       podbench hotfix enable SERVICE_DIRECTORY -n NAMESPACE
+
+   This derives the release, pod, container, entrypoint and values layout from
+   the service directory and live workload. Its options override those defaults.
+
+2. For other charts, print the dependency and values for manual application:
 
        podbench hotfix values --app RELEASE --from-pod POD -n NAMESPACE
+
+   For wrapper charts, use `--values-prefix KEY` to nest the workload settings
+   under their chart key. The claim settings remain at the top level.
 
 3. Initialize its claim:
 
@@ -45,3 +56,5 @@ creates the SSH config directory and installs that Include safely.
 
 This is a rapid-iteration prototype. Root and unknown-identity targets use the
 same seat spec and may not provide useful ptrace access.
+Hotfix initialization also installs a small `LD_PRELOAD` shim so dynamically
+linked application processes opt into Yama debugging without `SYS_PTRACE`.

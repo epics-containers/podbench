@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from .cli import console, error_console, new_app, require_subcommand, run
 from .hotfix_core import HotfixError
+from .hotfix_enable import enable as enable_hotfix
 from .hotfix_runtime import init as init_hotfix
 from .hotfix_runtime import restart as restart_hotfix
 from .hotfix_status import retire as retire_hotfix
@@ -43,6 +45,57 @@ def _build_app(runner: Runner | None = None) -> typer.Typer:
         """Durable source edits on a workload-scoped PVC."""
         require_subcommand(ctx)
 
+    @app.command(help="enable hotfix wiring in a local service chart")
+    def enable(
+        service: Annotated[Path, typer.Argument(metavar="DIRECTORY")],
+        app_name: Annotated[
+            str | None,
+            typer.Option("--app", metavar="NAME", help="override Helm release name"),
+        ] = None,
+        from_pod: Annotated[
+            str | None,
+            typer.Option("--from-pod", metavar="POD", help="override source pod"),
+        ] = None,
+        entrypoint: Annotated[
+            str | None,
+            typer.Option(
+                "--entrypoint", metavar="COMMAND", help="override application command"
+            ),
+        ] = None,
+        gid: Annotated[
+            int | None,
+            typer.Option("--gid", metavar="GID", help="override application GID"),
+        ] = None,
+        size: Annotated[
+            str, typer.Option("--size", metavar="SIZE", help="claim size")
+        ] = "10Gi",
+        values_prefix: Annotated[
+            str | None,
+            typer.Option(
+                "--values-prefix",
+                metavar="KEY",
+                help="override the workload values key",
+            ),
+        ] = None,
+        container: Container = None,
+        namespace: Namespace = None,
+        context: Context = None,
+        kubectl: KubectlBinary = "kubectl",
+    ) -> None:
+        kube = kubectl_for(namespace, context=context, binary=kubectl, runner=runner)
+        for line in enable_hotfix(
+            kube,
+            service,
+            app=app_name,
+            from_pod=from_pod,
+            container=container,
+            command=entrypoint,
+            gid=gid,
+            size=size,
+            values_prefix=values_prefix,
+        ):
+            console.print(line)
+
     @app.command(help="emit the Helm values needed by the workload")
     def values(
         app_name: Annotated[
@@ -65,6 +118,14 @@ def _build_app(runner: Runner | None = None) -> typer.Typer:
         size: Annotated[
             str, typer.Option("--size", metavar="SIZE", help="claim size")
         ] = "10Gi",
+        values_prefix: Annotated[
+            str | None,
+            typer.Option(
+                "--values-prefix",
+                metavar="KEY",
+                help="nest workload values below this chart key",
+            ),
+        ] = None,
         container: Container = None,
         namespace: Namespace = None,
         context: Context = None,
@@ -72,17 +133,18 @@ def _build_app(runner: Runner | None = None) -> typer.Typer:
     ) -> None:
         kube = kubectl_for(namespace, context=context, binary=kubectl, runner=runner)
         pod = kube.get_pod(from_pod.removeprefix("pod/"))
-        typer.echo(
-            render_values(
-                pod,
-                app_name,
-                container_name=container,
-                command=entrypoint,
-                gid=gid,
-                size=size,
-            ),
-            nl=False,
+        rendered = render_values(
+            pod,
+            app_name,
+            container_name=container,
+            command=entrypoint,
+            gid=gid,
+            size=size,
+            values_prefix=values_prefix,
         )
+        for line in rendered.splitlines():
+            style = "bold cyan" if line.startswith("# ") else None
+            console.print(line, style=style)
 
     @app.command(name="init", help="clone the source and build the claim environment")
     def init_command(

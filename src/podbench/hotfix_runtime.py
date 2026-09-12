@@ -16,18 +16,20 @@ from .hotfix_core import (
 )
 from .kubectl import Kubectl
 from .launcher import attach, running_seat
-from .model import HOTFIX_APP_PATH, HOTFIX_CHILD_PID_PATH, HOTFIX_HOLD_PATH
+from .model import (
+    HOTFIX_APP_PATH,
+    HOTFIX_CHILD_PID_PATH,
+    HOTFIX_HOLD_PATH,
+    HOTFIX_PTRACE_PATH,
+)
 
 
 def _seat(kube: Kubectl, target: Target, pod: dict) -> str:
     current = running_seat(pod)
     if current:
         return current.name
-    console.print(
-        f"landing a seat in {target.pod.name}",
-        style="yellow",
-    )
-    return attach(kube, target.pod.name, target=target.container).seat.container
+    with console.status(f"Landing a seat in {target.pod.name}..."):
+        return attach(kube, target.pod.name, target=target.container).seat.container
 
 
 def _seat_run(
@@ -77,6 +79,8 @@ def init(
             "set -euo pipefail",
             f"find {HOTFIX_APP_PATH} -mindepth 1 -delete",
             f"git clone {branch}{shlex.quote(repo)} {HOTFIX_APP_PATH}",
+            f"install -m 0755 /usr/local/lib/libpodbench-ptrace.so "
+            f"{HOTFIX_PTRACE_PATH}",
             f"cd {HOTFIX_APP_PATH}",
             'mkdir -p "$HOME"',
             f"git config --global --add safe.directory {HOTFIX_APP_PATH}",

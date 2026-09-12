@@ -17,6 +17,7 @@ HOTFIX_APP_PATH = "/podbench/app"
 HOTFIX_INTERPRETER_PATH = f"{HOTFIX_APP_PATH}/.python"
 HOTFIX_HOLD_PATH = "/tmp/podbench-hold"
 HOTFIX_CHILD_PID_PATH = "/tmp/podbench-child.pid"
+HOTFIX_PTRACE_PATH = f"{HOTFIX_APP_PATH}/.podbench-ptrace.so"
 SEAT_HOME_VOLUME = "podbench-home"
 
 _OCI_TAG = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,127}")

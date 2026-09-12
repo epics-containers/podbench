@@ -32,6 +32,22 @@ def hotfix_container(pod: dict) -> str | None:
     return None
 
 
+def hotfix_state(kube: Kubectl, pod: dict, container: str) -> tuple[str, bool]:
+    name = as_dict(pod.get("metadata")).get("name")
+    if not isinstance(name, str):
+        return "unreachable", False
+    target, _ = resolve_target(kube, name, container)
+    manifest = exec_target(kube, target, f"cat {MANIFEST}", check=False)
+    held = (
+        exec_target(kube, target, f"test -e {HOTFIX_HOLD_PATH}", check=False).returncode
+        == 0
+    )
+    state = "initialized" if manifest.returncode == 0 else "ready for init"
+    if held:
+        state += ", HELD"
+    return state, not held
+
+
 def status(kube: Kubectl) -> tuple[list[str], bool]:
     lines: list[str] = []
     healthy = True
@@ -40,20 +56,8 @@ def status(kube: Kubectl) -> tuple[list[str], bool]:
         name = as_dict(pod.get("metadata")).get("name")
         if not container or not isinstance(name, str):
             continue
-        target, _ = resolve_target(kube, name, container)
-        manifest = exec_target(kube, target, f"cat {MANIFEST}", check=False)
-        held = (
-            exec_target(
-                kube, target, f"test -e {HOTFIX_HOLD_PATH}", check=False
-            ).returncode
-            == 0
-        )
-        state = "initialized" if manifest.returncode == 0 else "empty"
-        if manifest.returncode:
-            healthy = False
-        if held:
-            state += ", HELD"
-            healthy = False
+        state, state_healthy = hotfix_state(kube, pod, container)
+        healthy = healthy and state_healthy
         lines.append(f"{name}/{container}: {claim_name(pod) or '?'} ({state})")
     return lines or [f"no hotfixes in namespace {kube.namespace}"], healthy
 

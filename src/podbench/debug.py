@@ -23,6 +23,7 @@ from rich.table import Table
 from rich.text import Text
 
 from .cli import console, error_console, new_app, run
+from .gdb_support import thread_db_arguments
 
 
 @dataclass(frozen=True)
@@ -264,6 +265,7 @@ def debug(pid: int | None) -> int:
     arguments = [
         "gdb",
         "-q",
+        *thread_db_arguments(process.pid),
         "-iex",
         f"set sysroot {root}",
         "-se",

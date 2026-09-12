@@ -83,6 +83,11 @@ ENV UV_PYTHON_INSTALL_DIR=/python
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable --no-dev --managed-python
 
+# Loaded by hotfix targets so each dynamically linked executable opts into
+# Yama ptrace. Avoid a libc dependency: the target's loader supplies syscall.
+RUN cc -shared -fPIC -nostdlib -fno-stack-protector \
+    -o /libpodbench-ptrace.so src/podbench/ptrace_any.c
+
 # The runtime stage is the podbench debug image itself. Unlike the template it
 # came from, it is not a thin launcher wrapper: a developer lands *inside* this
 # image over ssh, so the whole toolchain has to be here.
@@ -96,6 +101,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # /proc/<pid>/root` is what makes gdb correct, and S3 documents the plausible
 # wrong backtrace you get by relying on the match instead.
 FROM debian:bookworm-slim AS runtime
+
+COPY --from=build /libpodbench-ptrace.so /usr/local/lib/libpodbench-ptrace.so
 
 # Everything here is baked rather than installed at attach time, because
 # `apt-get install openssh-server` measured 14-24 s (S2) and the whole apt step
