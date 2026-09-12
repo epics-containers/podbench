@@ -49,7 +49,10 @@ def claim_for(app: str) -> str:
 def entrypoint(container: Mapping[str, Any]) -> str:
     command = container.get("command")
     if not isinstance(command, list) or not command:
-        raise HotfixError("the entrypoint is only in the image; pass --entrypoint")
+        raise HotfixError(
+            "the entrypoint is only in the image; use podbench hotfix enable "
+            "SERVICE_DIRECTORY, or pass --entrypoint for generic output"
+        )
     words = [str(word) for word in command]
     args = container.get("args")
     if isinstance(args, list):

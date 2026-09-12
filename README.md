@@ -11,7 +11,9 @@ The image contains a shell, Git, uv, gdb, strace and basic process tools.
 Attach prints an SSH command carried by `kubectl exec` (no pod network), the
 `~/.ssh/config` Include line, and a raw exec fallback. Images pull by default.
 Inside a seat, `podbench debug` shows the process tree and attaches GDB to the
-selected process using its container filesystem.
+selected process using its container filesystem. `podbench debug --python PID`
+instead uses GDB to inject debugpy on port 5678; restart the hotfix child after
+disconnecting to remove the injected debugger.
 `podbench status` shows attached seats and hotfix state together.
 Development builds use `ghcr.io/epics-containers/podbench:prototype-attach-hotfix`;
 override that with `--image` or `PODBENCH_IMAGE`.
@@ -25,8 +27,9 @@ creates the SSH config directory and installs that Include safely.
 
        podbench hotfix enable SERVICE_DIRECTORY -n NAMESPACE
 
-   This derives the release, pod, container, entrypoint and values layout from
-   the service directory and live workload. Its options override those defaults.
+   This requires a live workload and derives the release, pod, container,
+   security identity, entrypoint and values layout. IOC and services-template
+   BlueAPI charts are wired automatically; options override those defaults.
 
 2. For other charts, print the dependency and values for manual application:
 
@@ -39,8 +42,8 @@ creates the SSH config directory and installs that Include safely.
 
        podbench hotfix init POD --repo URL -n NAMESPACE
 
-   Python projects are synced with uv. Other repositories are cloned without a
-   dependency-install step.
+   Python projects are synced with uv and gain debugpy for on-demand injection.
+   Other repositories are cloned without a dependency-install step.
 
    Generated values keep liveness probes but extend non-exec probe failure
    thresholds for the two-minute restart window.

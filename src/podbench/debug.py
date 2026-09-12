@@ -13,7 +13,6 @@ import tty
 from collections import defaultdict
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
@@ -23,16 +22,8 @@ from rich.table import Table
 from rich.text import Text
 
 from .cli import console, error_console, new_app, run
-from .gdb_support import thread_db_arguments
-
-
-@dataclass(frozen=True)
-class Process:
-    pid: int
-    ppid: int
-    uid: int
-    state: str
-    command: str
+from .debug_model import Process
+from .gdb_support import ptrace_warning, thread_db_arguments
 
 
 def _read_process(path: Path) -> Process | None:
@@ -53,6 +44,7 @@ def _read_process(path: Path) -> Process | None:
             pid=int(path.name),
             ppid=int(fields["PPid"]),
             uid=int(fields["Uid"].split()[0]),
+            gid=int(fields["Gid"].split()[0]),
             state=fields["State"].split()[0],
             command=command,
         )
@@ -199,32 +191,7 @@ def _choose(rows: list[tuple[Process, str]]) -> Process | None:
         return None
 
 
-def _has_ptrace_capability() -> bool:
-    try:
-        status = Path("/proc/self/status").read_text().splitlines()
-        effective = next(
-            line.split()[1] for line in status if line.startswith("CapEff:")
-        )
-        return bool(int(effective, 16) & (1 << 19))
-    except (FileNotFoundError, PermissionError, StopIteration, ValueError):
-        return False
-
-
-def _ptrace_warning(process: Process) -> str | None:
-    if _has_ptrace_capability():
-        return None
-    if os.geteuid() != process.uid:
-        return "the seat lacks SYS_PTRACE and the process has a different UID"
-    try:
-        scope = int(Path("/proc/sys/kernel/yama/ptrace_scope").read_text())
-    except (FileNotFoundError, PermissionError, ValueError):
-        return None
-    if scope > 0:
-        return f"ptrace_scope={scope} and the seat lacks SYS_PTRACE"
-    return None
-
-
-def debug(pid: int | None) -> int:
+def debug(pid: int | None, *, python: bool = False) -> int:
     processes = _processes()
     rows = _flatten(processes)
     if not rows:
@@ -245,6 +212,11 @@ def debug(pid: int | None) -> int:
         if process is None:
             return 0
 
+    if python:
+        from .python_debug import inject
+
+        return inject(process.pid, process.uid, process.gid)
+
     executable = Path(f"/proc/{process.pid}/exe")
     root = Path(f"/proc/{process.pid}/root")
     try:
@@ -255,7 +227,7 @@ def debug(pid: int | None) -> int:
     except PermissionError:
         error_console.print(f"cannot access {executable}; permission denied")
         return 1
-    if warning := _ptrace_warning(process):
+    if warning := ptrace_warning(process):
         error_console.print(f"warning: GDB may be denied: {warning}", style="yellow")
     if shutil.which("gdb") is None:
         error_console.print(
@@ -284,9 +256,15 @@ def _build_app() -> typer.Typer:
         pid: Annotated[
             int | None, typer.Argument(metavar="PID", help="process to attach to")
         ] = None,
+        python: Annotated[
+            bool,
+            typer.Option(
+                "--python", help="inject debugpy through GDB instead of opening GDB"
+            ),
+        ] = False,
     ) -> None:
         """Select a process and attach GDB from inside a seat."""
-        raise typer.Exit(debug(pid))
+        raise typer.Exit(debug(pid, python=python))
 
     return app
 

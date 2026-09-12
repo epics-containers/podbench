@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
+from .hotfix_blueapi import workload as blueapi_workload
+from .hotfix_blueapi import write_template as write_blueapi_template
 from .hotfix_core import HotfixError
 from .hotfix_values import (
     HOTFIX_CHART,
@@ -28,14 +30,28 @@ WORKLOAD_KEYS = (
 )
 
 
-def _pod_for(kube: Kubectl, app: str, requested: str | None) -> dict[str, Any]:
+def _pod_for(
+    kube: Kubectl, app: str, requested: str | None, container: str | None = None
+) -> dict[str, Any]:
     if requested:
         return kube.get_pod(requested.removeprefix("pod/"))
     matches = []
     for pod in kube.list_pods():
         metadata = as_dict(pod.get("metadata"))
         labels = as_dict(metadata.get("labels"))
-        if labels.get("app") == app and not metadata.get("deletionTimestamp"):
+        matches_release = labels.get("app") == app or (
+            labels.get("app.kubernetes.io/instance") == app
+        )
+        containers = as_dict(pod.get("spec")).get("containers")
+        container_list = containers if isinstance(containers, list) else []
+        matches_container = container is None or any(
+            as_dict(item).get("name") == container for item in container_list
+        )
+        if (
+            matches_release
+            and matches_container
+            and not metadata.get("deletionTimestamp")
+        ):
             matches.append(pod)
     if len(matches) != 1:
         names = ", ".join(str(as_dict(p.get("metadata")).get("name")) for p in matches)
@@ -68,9 +84,10 @@ def _ioc_command(pod: dict[str, Any], container: str | None) -> str:
 def _prefix(values: str, override: str | None) -> str | None:
     if override is not None:
         return override
-    return (
-        "ioc-instance" if re.search(r"(?m)^ioc-instance:\s*(?:#.*)?$", values) else None
-    )
+    for key in ("ioc-instance", "blueapi"):
+        if re.search(rf"(?m)^{key}:\s*(?:#.*)?$", values):
+            return key
+    return None
 
 
 def _dependency(chart: str) -> tuple[str, bool]:
@@ -178,19 +195,32 @@ def enable(
     if not values_path.is_file() or not chart_link.exists():
         raise HotfixError(f"{service} must contain values.yaml and Chart.yaml")
     release = app or service.name
-    pod = _pod_for(kube, release, from_pod)
     current_values = values_path.read_text()
     prefix = _prefix(current_values, values_prefix)
+    pod = _pod_for(
+        kube,
+        release,
+        from_pod,
+        container or ("blueapi" if prefix == "blueapi" else None),
+    )
     if command is None and prefix == "ioc-instance":
         command = _ioc_command(pod, container)
-    claim, workload = value_blocks(
-        pod,
-        release,
-        container_name=container,
-        command=command,
-        gid=gid,
-        size=size,
-    )
+    claim = [
+        "podbench-hotfix-claim:",
+        "  enabled: true",
+        f"  size: {size}",
+    ]
+    if prefix == "blueapi" and command is None:
+        workload = blueapi_workload(pod, release, container, gid)
+    else:
+        claim, workload = value_blocks(
+            pod,
+            release,
+            container_name=container,
+            command=command,
+            gid=gid,
+            size=size,
+        )
     chart_path = chart_link.resolve(strict=True)
     new_chart, chart_changed = _dependency(chart_path.read_text())
     new_values, values_changed = _values(current_values, claim, workload, prefix)
@@ -201,4 +231,7 @@ def enable(
     lines = [f"release: {release}", f"pod: {as_dict(pod.get('metadata')).get('name')}"]
     lines.append(f"{'updated' if chart_changed else 'unchanged'}: {chart_path}")
     lines.append(f"{'updated' if values_changed else 'unchanged'}: {values_path}")
+    if prefix == "blueapi" and command is None:
+        template, changed = write_blueapi_template(service)
+        lines.append(f"{'updated' if changed else 'unchanged'}: {template}")
     return lines
