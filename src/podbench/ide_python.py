@@ -27,6 +27,15 @@ def listener(port: int) -> str:
     return ""
 
 
+def _debugpy_source() -> Path | None:
+    """Find a debugpy package to copy: the image's copy, else the claim's."""
+    candidates = [
+        Path("/opt/podbench/debugpy/debugpy"),
+        *Path("/podbench/app/.venv/lib").glob("python3.*/site-packages/debugpy"),
+    ]
+    return next((c for c in candidates if (c / "__init__.py").is_file()), None)
+
+
 def inject(pid: int, start: str, port: int) -> None:
     proc = Path(f"/proc/{pid}")
     if (proc / "stat").read_text().rsplit(")", 1)[1].split()[19] != start:
@@ -43,10 +52,13 @@ def inject(pid: int, start: str, port: int) -> None:
     destination = root / "tmp" / f".podbench-debugpy-{os.getuid()}"
     # This /proc spelling exists in both mount namespaces. Do not resolve it.
     if not (destination / "debugpy/__init__.py").is_file():
-        source = Path("/opt/podbench/debugpy")
-        if not source.is_dir():
-            raise RuntimeError("the seat image does not contain debugpy")
-        shutil.copytree(source, destination, dirs_exist_ok=True)
+        source = _debugpy_source()
+        if source is None:
+            raise RuntimeError(
+                "no debugpy in the seat image or the hotfix environment; "
+                "rebuild the seat image or run podbench hotfix init"
+            )
+        shutil.copytree(source, destination / "debugpy", dirs_exist_ok=True)
     environment = {
         **os.environ,
         "PYTHONPATH": str(destination),
