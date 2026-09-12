@@ -53,6 +53,12 @@ def _status(args: Sequence[str]) -> int:
     return main(args)
 
 
+def _ide(args: Sequence[str]) -> int:
+    from .ide import main
+
+    return main(args)
+
+
 def _build_app() -> typer.Typer:
     app = new_app()
 
@@ -72,6 +78,13 @@ def _build_app() -> typer.Typer:
             raise typer.Exit(2)
 
     settings = {"ignore_unknown_options": True, "allow_extra_args": True}
+    app.command(
+        name="ide",
+        help="open a debug seat in your editor",
+        add_help_option=False,
+        context_settings=settings,
+        rich_help_panel="Workstation commands",
+    )(_forward(_ide, "ide"))
     app.command(
         name="attach",
         help="land or reconnect to a debug seat",

@@ -144,6 +144,7 @@ def wire_ssh(
     *,
     identity: str = DEFAULT_IDENTITY,
     config_dir: str | None = None,
+    forward_agent: bool = False,
 ) -> SSHWiring:
     private_key, public_key = read_public_key(identity)
     server = _server_info(kubectl, pod.name, seat, public_key)
@@ -188,6 +189,11 @@ def wire_ssh(
             f"    User {server.login}",
             f"    IdentityFile {_quote_config(str(private_key))}",
             "    IdentitiesOnly yes",
+            *(
+                ["    ForwardAgent yes", "    ControlMaster no", "    ControlPath none"]
+                if forward_agent
+                else []
+            ),
             f"    ProxyCommand {shlex.join(proxy)}",
             "    ServerAliveInterval 15",
             "    ServerAliveCountMax 3",
