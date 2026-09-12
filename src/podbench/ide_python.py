@@ -16,7 +16,11 @@ from podbench.gdb_support import thread_db_arguments
 
 def listener(port: int) -> str:
     for table in ("tcp", "tcp6"):
-        for row in Path(f"/proc/net/{table}").read_text().splitlines()[1:]:
+        try:
+            rows = Path(f"/proc/net/{table}").read_text().splitlines()[1:]
+        except FileNotFoundError:
+            continue
+        for row in rows:
             fields = row.split()
             if fields[1].rsplit(":", 1)[1] == f"{port:04X}" and fields[3] == "0A":
                 return fields[9]

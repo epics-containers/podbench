@@ -113,9 +113,11 @@ def prepare(identity: dict) -> dict:
     if machine.exists():
         try:
             previous = json.loads(machine.read_text())
+            if not isinstance(previous, dict):
+                raise ValueError("expected a JSON object")
         except ValueError as error:
             raise RuntimeError(
-                f"cannot safely merge {machine}; make it valid JSON first"
+                f"cannot safely merge {machine}; expected a JSON object"
             ) from error
         for key, value in settings.items():
             if isinstance(value, dict):
@@ -178,6 +180,11 @@ def prepare(identity: dict) -> dict:
             try:
                 shutil.copyfile(f"/proc/{pid}/exe", temporary)
                 temporary.replace(program)
+                source_map = {
+                    f"/{p.name}": str(p)
+                    for p in Path(root).iterdir()
+                    if p.is_dir() and p.name not in ("proc", "sys", "dev", "podbench")
+                }
             except OSError:
                 warnings.append(
                     f"PID {pid} exited or became unreadable; rerun to refresh"
@@ -209,11 +216,6 @@ def prepare(identity: dict) -> dict:
             )
             wrapper.chmod(0o700)
             commands = thread_db_arguments(pid)[1::2] + [f"set sysroot {root}"]
-            source_map = {
-                f"/{p.name}": str(p)
-                for p in Path(root).iterdir()
-                if p.is_dir() and p.name not in ("proc", "sys", "dev", "podbench")
-            }
             configurations.append(
                 {
                     "name": f"C/C++ {label}",
