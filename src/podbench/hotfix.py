@@ -172,7 +172,7 @@ def _build_app(runner: Runner | None = None) -> typer.Typer:
             bool, typer.Option("--reinstall", help="rebuild the claim environment")
         ] = False,
         deadline: Annotated[
-            int, typer.Option("--deadline", help="hold timeout in seconds")
+            int, typer.Option("--deadline", min=1, help="restart timeout in seconds")
         ] = 120,
         container: Container = None,
         namespace: Namespace = None,
