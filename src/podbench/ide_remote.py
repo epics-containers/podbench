@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 from podbench.gdb_support import thread_db_arguments
+from podbench.ssh_agent import PYTHON
 
 EXCLUDES = {
     f"**/{name}/**": True
@@ -109,7 +110,12 @@ def prepare(identity: dict) -> dict:
         "python.analysis.exclude": list(EXCLUDES),
         "C_Cpp.files.exclude": EXCLUDES,
     }
+    if (folder / ".venv/bin/python").is_file():
+        settings["python.defaultInterpreterPath"] = str(folder / ".venv/bin/python")
+    # The machine scope also covers the bootstrap window; the workspace file
+    # carries only podbench's own settings.
     machine = home / ".vscode-server/data/Machine/settings.json"
+    merged = settings
     if machine.exists():
         try:
             previous = json.loads(machine.read_text())
@@ -124,10 +130,8 @@ def prepare(identity: dict) -> dict:
                 previous[key] = {**previous.get(key, {}), **value}
             else:
                 previous[key] = value
-        settings = previous
-    if (folder / ".venv/bin/python").is_file():
-        settings["python.defaultInterpreterPath"] = str(folder / ".venv/bin/python")
-    write_json(machine, settings)
+        merged = previous
+    write_json(machine, merged)
     configurations, tasks, extensions, warnings = [], [], set(), []
     for process in processes():
         pid, start = process["pid"], process["start"]
@@ -166,7 +170,7 @@ def prepare(identity: dict) -> dict:
                 {
                     "label": task,
                     "type": "process",
-                    "command": "/app/.venv/bin/python",
+                    "command": PYTHON,
                     "args": ["/tmp/podbench-ide_python.py", str(pid), start, str(port)],
                     "problemMatcher": [],
                 }
@@ -195,7 +199,7 @@ def prepare(identity: dict) -> dict:
                 "#!/bin/sh\nset -eu\ncd "
                 + shlex.quote(str(home))
                 + "\n"
-                + "/app/.venv/bin/python -c "
+                + f"{PYTHON} -c "
                 + shlex.quote(
                     "from pathlib import Path; import sys; "
                     f"s=Path('/proc/{pid}/stat').read_text()"
