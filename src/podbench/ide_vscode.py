@@ -11,8 +11,7 @@ from importlib.resources import files
 from urllib.parse import quote
 
 from .cli import console
-from .doctor import include_is_active
-from .doctor import main as doctor_main
+from .doctor import ensure_include
 from .ide_resources import ensure_headroom
 from .kubectl import Kubectl, KubectlError, run_subprocess
 from .launcher import attach, resolve_pod_name, target_container_name
@@ -71,11 +70,7 @@ def open_vscode(
         config_dir=config_dir,
         forward_agent=True,
     )
-    if not include_is_active(config_dir):
-        args = ["--fix"] + (["--config-dir", config_dir] if config_dir else [])
-        doctor_main(args)
-        if not include_is_active(config_dir):
-            raise KubectlError(f"add {wiring.include} at the top of ~/.ssh/config")
+    ensure_include(config_dir)
     # Send these small helpers so workstation changes also work with existing images.
     for module in ("ide_remote", "ide_python"):
         source = files("podbench").joinpath(f"{module}.py").read_text()

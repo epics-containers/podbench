@@ -94,6 +94,14 @@ def _write_include(config: Path, line: str) -> None:
     os.replace(temporary, target)
 
 
+def ensure_include(config_dir: str | None = None) -> None:
+    """Install only the SSH Include, without running the doctor's other checks."""
+    if not include_is_active(config_dir):
+        _write_include(
+            SSH_CONFIG.expanduser(), include_line(client_directory(config_dir))
+        )
+
+
 def _config_checks(config_dir: str | None, fix: bool) -> list[Check]:
     directory = client_directory(config_dir)
     generated = directory / "config.d"
