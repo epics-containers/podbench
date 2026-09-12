@@ -15,6 +15,7 @@ from .model import DEFAULT_IMAGE, IMAGE_ENV
 from .ssh_transport import (
     DEFAULT_IDENTITY,
     missing_ssh_capabilities,
+    read_public_key,
     wire_ssh,
 )
 
@@ -98,6 +99,7 @@ def _build_app(runner: Runner | None = None) -> typer.Typer:
             typer.Option("--kubectl", metavar="BIN", help="kubectl binary"),
         ] = "kubectl",
     ) -> None:
+        read_public_key(identity)
         kube = kubectl_for(namespace, context=context, binary=kubectl, runner=runner)
         with console.status("Landing or reconnecting the seat..."):
             session = attach(
@@ -144,8 +146,11 @@ def _build_app(runner: Runner | None = None) -> typer.Typer:
             command = f"ssh {wiring.alias}" if included else wiring.command
             console.print(f"connect: {command}", style="cyan")
             if not included:
-                console.print("run podbench doctor --fix", style="red")
-        if verbose:
+                fix = ["podbench", "doctor", "--fix"]
+                if config_dir:
+                    fix += ["--config-dir", config_dir]
+                console.print(f"run {shlex.join(fix)}", style="red")
+        if verbose or missing is None or missing:
             fallback = [kubectl]
             if context:
                 fallback += ["--context", context]

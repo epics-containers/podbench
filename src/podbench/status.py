@@ -12,7 +12,7 @@ from rich.table import Table
 
 from .cli import console, error_console, new_app, run
 from .hotfix_core import HotfixError
-from .hotfix_status import hotfix_container, hotfix_state
+from .hotfix_status import hotfix_containers, hotfix_state
 from .kubectl import Kubectl, KubectlError, Runner
 from .launcher import CONTAINER_BASE, LauncherError, kubectl_for
 from .model import as_dict
@@ -35,6 +35,7 @@ def _seats(pod: dict[str, Any]) -> tuple[dict[str, list[str]], bool]:
     }
     seats: dict[str, list[str]] = defaultdict(list)
     healthy = True
+    running_targets: set[str] = set()
     for item in _items(spec.get("ephemeralContainers")):
         name = str(item.get("name", ""))
         if not name.startswith(f"{CONTAINER_BASE}-"):
@@ -43,14 +44,14 @@ def _seats(pod: dict[str, Any]) -> tuple[dict[str, list[str]], bool]:
         state = states.get(name, {})
         if as_dict(state.get("running")):
             label = name
+            running_targets.add(target)
         elif as_dict(state.get("waiting")):
             label = f"{name} (waiting)"
             healthy = False
         else:
             label = f"{name} (stopped)"
-            healthy = False
         seats[target].append(label)
-    return dict(seats), healthy
+    return dict(seats), healthy and set(seats) <= running_targets
 
 
 def _show(kube: Kubectl, pod_name: str | None) -> bool:
@@ -65,13 +66,12 @@ def _show(kube: Kubectl, pod_name: str | None) -> bool:
     for pod in pods:
         name = str(as_dict(pod.get("metadata")).get("name", "?"))
         seats, seats_healthy = _seats(pod)
-        hotfix = hotfix_container(pod)
+        hotfix = hotfix_containers(pod)
         targets = set(seats)
-        if hotfix:
-            targets.add(hotfix)
+        targets.update(hotfix)
         for target in sorted(targets):
             hotfix_label = "—"
-            if hotfix == target:
+            if target in hotfix:
                 hotfix_label, hotfix_healthy = hotfix_state(kube, pod, target)
                 healthy = healthy and hotfix_healthy
             table.add_row(

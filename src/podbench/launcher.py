@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
 from .kubectl import Kubectl, Runner, run_subprocess
-from .model import DEFAULT_IMAGE, HOTFIX_CLAIM_VOLUME, PodRef, as_dict
+from .model import DEFAULT_IMAGE, HOTFIX_CLAIM_VOLUME, IMAGE_ENV, PodRef, as_dict
 from .ssh_agent import PYTHON, ROOT_SSH_CAPABILITIES
 
 CONTAINER_BASE = "podbench"
@@ -96,21 +97,15 @@ def application_mount(
     return _named(target.get("volumeMounts"), volume) or {}
 
 
-def declared_volumes(pod: Mapping[str, Any]) -> set[str]:
-    return {
-        str(item["name"])
-        for item in _items(as_dict(pod.get("spec")).get("volumes"))
-        if isinstance(item.get("name"), str)
-    }
-
-
-def runs_hotfix_supervisor(container: Mapping[str, Any]) -> bool:
-    words = container.get("args", [])
-    text = "\n".join(str(word) for word in words) if isinstance(words, list) else ""
-    return "/tmp/podbench-child.pid" in text and "/tmp/podbench-hold" in text
-
-
-def running_seat(pod: Mapping[str, Any]) -> SeatInfo | None:
+def running_seat(
+    pod: Mapping[str, Any],
+    *,
+    target: str | None = None,
+    image: str | None = None,
+    uid: int | None = None,
+    gid: int | None = None,
+) -> SeatInfo | None:
+    """Return the newest running seat matching the requested container and image."""
     spec = as_dict(pod.get("spec"))
     status = as_dict(pod.get("status"))
     running = {
@@ -123,6 +118,14 @@ def running_seat(pod: Mapping[str, Any]) -> SeatInfo | None:
         for item in _items(spec.get("ephemeralContainers"))
         if str(item.get("name", "")).startswith(f"{CONTAINER_BASE}-")
         and item.get("name") in running
+        and (target is None or item.get("targetContainerName") == target)
+        and (image is None or item.get("image") == image)
+        and (
+            uid is None or as_dict(item.get("securityContext")).get("runAsUser") == uid
+        )
+        and (
+            gid is None or as_dict(item.get("securityContext")).get("runAsGroup") == gid
+        )
     ]
     if not seats:
         return None
@@ -217,33 +220,28 @@ def attach(
     pod_reference: str,
     *,
     target: str | None = None,
-    image: str = DEFAULT_IMAGE,
+    image: str | None = None,
     target_uid: int | None = None,
     target_gid: int | None = None,
     force_new: bool = False,
     pull_policy: str = DEFAULT_PULL_POLICY,
     timeout: float = 120.0,
     ssh: bool = False,
-    **_: object,
 ) -> Session:
     pod_name = resolve_pod_name(pod_reference)
     pod = kubectl.get_pod(pod_name)
     target = target_container_name(pod, target)
-    existing = running_seat(pod)
+    image = image or os.environ.get(IMAGE_ENV, DEFAULT_IMAGE)
     uid, gid = target_uid_gid(pod, target)
     uid = target_uid if target_uid is not None else uid
     gid = target_gid if target_gid is not None else gid
+    existing = running_seat(pod, target=target, image=image, uid=uid, gid=gid)
     warnings: list[str] = []
     if uid is None or gid is None:
         warnings.append("target identity incomplete; attach may fail")
     if uid == 0:
         warnings.append("root target; ptrace may be unavailable")
-    if (
-        existing is not None
-        and existing.target == target
-        and existing.image == image
-        and not force_new
-    ):
+    if existing is not None and not force_new:
         return Session(
             SeatRef(PodRef(kubectl.namespace, pod_name), existing.name),
             target,
