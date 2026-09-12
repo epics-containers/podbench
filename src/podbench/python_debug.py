@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import shutil
-import socket
 import subprocess
 import time
 from pathlib import Path
@@ -16,9 +15,17 @@ SHARED_TMP = f"{HOTFIX_APP_PATH}/.podbench-tmp"
 
 
 def _listening() -> bool:
-    with socket.socket() as connection:
-        connection.settimeout(0.2)
-        return connection.connect_ex(("127.0.0.1", DEBUGPY_PORT)) == 0
+    port = f"{DEBUGPY_PORT:04X}"
+    for table in (Path("/proc/net/tcp"), Path("/proc/net/tcp6")):
+        try:
+            rows = table.read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for row in rows:
+            fields = row.split()
+            if fields[1].rsplit(":", 1)[-1] == port and fields[3] == "0A":
+                return True
+    return False
 
 
 def inject(pid: int, uid: int, gid: int) -> int:
