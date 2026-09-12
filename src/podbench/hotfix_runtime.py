@@ -181,10 +181,14 @@ def restart(
             kube,
             target,
             seat.name,
-            f"cd {HOTFIX_APP_PATH} && git status --short",
+            f"git -c safe.directory={HOTFIX_APP_PATH} "
+            f"-C {HOTFIX_APP_PATH} status --short",
             check=False,
         )
-        state = "clean" if not result.stdout.strip() else "modified"
+        if result.returncode:
+            state = "unknown (git status failed)"
+        else:
+            state = "clean" if not result.stdout.strip() else "modified"
     return [
         f"restarted {target.container}: pid {before} -> {after}",
         f"checkout is {state}",
