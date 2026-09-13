@@ -16,7 +16,7 @@ Before running live commands:
 
 Choose the relevant procedure:
 
-- For attaching a seat, process visibility, image reuse, or SSH foundations, read [references/attach.md](references/attach.md).
+- For attaching a seat, process visibility, image reuse, SSH foundations, or IDE acceptance, read [references/attach.md](references/attach.md).
 - For claim wiring, checkout initialization, edit/restart, reinstall, status, retirement, or cleanup, read [references/hotfix.md](references/hotfix.md).
 - When working with the maintained demo environment, read [references/demo-cluster.md](references/demo-cluster.md) and verify its remembered values before use.
 
