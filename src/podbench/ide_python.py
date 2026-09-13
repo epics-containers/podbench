@@ -11,20 +11,8 @@ import sys
 import time
 from pathlib import Path
 
+from podbench.debug_model import listener, process_start
 from podbench.gdb_support import thread_db_arguments
-
-
-def listener(port: int) -> str:
-    for table in ("tcp", "tcp6"):
-        try:
-            rows = Path(f"/proc/net/{table}").read_text().splitlines()[1:]
-        except FileNotFoundError:
-            continue
-        for row in rows:
-            fields = row.split()
-            if fields[1].rsplit(":", 1)[1] == f"{port:04X}" and fields[3] == "0A":
-                return fields[9]
-    return ""
 
 
 def _debugpy_source() -> Path | None:
@@ -36,11 +24,12 @@ def _debugpy_source() -> Path | None:
     return next((c for c in candidates if (c / "__init__.py").is_file()), None)
 
 
-def inject(pid: int, start: str, port: int) -> None:
+def inject(pid: int, start: str, port: int, state_dir: Path | None = None) -> None:
     proc = Path(f"/proc/{pid}")
-    if (proc / "stat").read_text().rsplit(")", 1)[1].split()[19] != start:
+    if process_start(pid) != start:
         raise RuntimeError("process restarted; rerun podbench ide vscode")
-    state = Path.home() / f".podbench/ide/python-{pid}.json"
+    state = (state_dir or Path.home() / ".podbench/ide") / f"python-{pid}.json"
+    state.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     if inode := listener(port):
         old = json.loads(state.read_text()) if state.exists() else {}
         if old == {"start": start, "port": port, "inode": inode}:
@@ -136,7 +125,12 @@ def inject(pid: int, start: str, port: int) -> None:
 
 if __name__ == "__main__":
     try:
-        inject(int(sys.argv[1]), sys.argv[2], int(sys.argv[3]))
+        inject(
+            int(sys.argv[1]),
+            sys.argv[2],
+            int(sys.argv[3]),
+            Path(sys.argv[4]) if len(sys.argv) > 4 else None,
+        )
     except (OSError, ValueError, RuntimeError) as error:
         print(str(error), file=sys.stderr)
         sys.exit(1)

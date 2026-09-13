@@ -26,6 +26,38 @@ def _run(argv: list[str], *, stdin: str | None = None, timeout: float = 30) -> s
     return result.stdout.strip()
 
 
+def _upload_helpers(kube: Kubectl, pod: str, seat: str) -> str:
+    modules = (
+        "ide_remote",
+        "ide_launchers",
+        "ide_python",
+        "gdb_support",
+        "debug_model",
+        "ssh_agent",
+    )
+    sources = {
+        f"{name}.py": files("podbench").joinpath(f"{name}.py").read_text()
+        for name in modules
+    }
+    sources["__init__.py"] = '"""Private workstation IDE helpers."""\n'
+    result = kube.exec_(
+        pod,
+        [
+            PYTHON,
+            "-c",
+            "import json,pathlib,sys,tempfile; "
+            "root=pathlib.Path(tempfile.mkdtemp(prefix='podbench-ide-')); "
+            "package=root/'podbench'; package.mkdir(mode=0o700); "
+            "[(package/name).write_text(source) "
+            "for name,source in json.load(sys.stdin).items()]; "
+            "print(root)",
+        ],
+        container=seat,
+        stdin=json.dumps(sources),
+    )
+    return result.stdout.strip()
+
+
 def open_vscode(
     kube: Kubectl,
     pod: str,
@@ -79,26 +111,17 @@ def open_vscode(
         forward_agent=forward_agent,
         ide=True,
     )
-    # Send these small helpers so workstation changes also work with existing images.
-    for module in ("ide_remote", "ide_python"):
-        source = files("podbench").joinpath(f"{module}.py").read_text()
-        kube.exec_(
-            pod,
-            [
-                PYTHON,
-                "-c",
-                "import pathlib,sys; "
-                "pathlib.Path(sys.argv[1]).write_text(sys.stdin.read())",
-                f"/tmp/podbench-{module}.py",
-            ],
-            container=session.seat.container,
-            stdin=source,
-        )
+    # Keep the complete helper dependency set private and independent of the
+    # installed seat package, including when reconnecting to an older image.
+    bundle = _upload_helpers(kube, pod, session.seat.container)
+    helper = shlex.join(
+        ["env", f"PYTHONPATH={bundle}", PYTHON, "-m", "podbench.ide_remote"]
+    )
     ssh = ["ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", wiring.alias]
     if forward_agent and not _run([*ssh, "ssh-add -l"]):
         raise KubectlError("SSH agent forwarding did not reach the seat")
     result = _run(
-        [*ssh, f"{PYTHON} /tmp/podbench-ide_remote.py prepare"],
+        [*ssh, f"{helper} prepare"],
         stdin=json.dumps(git_identity),
     )
     prepared = json.loads(result)
@@ -116,7 +139,7 @@ def open_vscode(
     deadline = time.monotonic() + timeout
     server = ""
     while time.monotonic() < deadline:
-        server = _run([*ssh, f"{PYTHON} /tmp/podbench-ide_remote.py server"])
+        server = _run([*ssh, f"{helper} server"])
         if server:
             break
         time.sleep(2)
