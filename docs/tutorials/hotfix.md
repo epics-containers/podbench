@@ -128,3 +128,9 @@ Use its **Podbench C/C++** launcher for native debugging. Restart does not compi
 C/C++: native changes need the IOC's build procedure and an entrypoint that runs
 the rebuilt binary. Cloning `ioc-pmac` alone does not replace the image's EPICS
 support binaries. See [attach](attach.md) for inspecting the running IOC.
+
+Hotfix wiring protects debugging pauses: Podbench holds supported exec liveness
+probes so Kubernetes does not restart the application while you inspect it.
+Readiness checks may temporarily mark it unavailable, but do not restart it.
+After Python debugging, restart the hotfix child to remove the injected debugger
+and release the probe hold.

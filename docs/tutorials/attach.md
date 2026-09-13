@@ -122,9 +122,7 @@ The application should be running. Closing SSH or VS Code leaves the seat
 available to reconnect; Kubernetes removes ephemeral containers when the pod is
 replaced. Do not delete the application pod merely to tidy up a seat.
 
-On hotfix-wired workloads, Podbench holds supported exec probes during debugging.
-Plain attach does not retrofit probe protection into an ordinary workload, so
-long pauses can trigger its existing liveness probes. Ptrace restrictions also
-still apply; see [attach and hotfix explained](../explanations.md).
-
-Next, use [hotfix](hotfix.md) to change source and debug the result.
+Plain attach leaves an ordinary workload's liveness probes unchanged, so a long
+debugger pause can cause Kubernetes to restart the application. The host's ptrace
+restrictions also apply, as described in the warning above. Use the
+[hotfix workflow](hotfix.md) for probe protection and source editing.
