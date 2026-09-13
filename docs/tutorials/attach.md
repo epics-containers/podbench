@@ -16,8 +16,23 @@ This pod has one application container. For multi-container pods, add
 `--target CONTAINER` to attach or IDE commands; otherwise Podbench selects the
 first application container without an error.
 
-Run the SSH command Podbench prints. You are now **in the seat**, an ephemeral
-container with Git, uv, GDB, strace and process tools. The connection travels
+Example output after completing setup:
+
+```text
+landed podbench-1 for p47-beamline/bl47p-mo-ioc-01-0/bl47p-mo-ioc-01
+connect: ssh podbench.p47-beamline.bl47p-mo-ioc-01-0.1.a1b2c3d4
+```
+
+If a seat already exists, the first line says `reusing` instead of `landed`.
+Run the command after `connect:` to enter the seat:
+
+```bash
+# Copy the SSH command from your own output; the alias suffix will differ.
+ssh podbench.p47-beamline.bl47p-mo-ioc-01-0.1.a1b2c3d4
+```
+
+You are now **in the seat**, an ephemeral container with Git, uv, GDB, strace and
+process tools. The connection travels
 through `kubectl exec`; you do not need a pod IP or an exposed SSH service.
 
 ## Inspect the IOC in GDB
