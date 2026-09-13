@@ -54,6 +54,7 @@ def _seat_run(
 def _sync_python() -> str:
     return (
         f"UV_PYTHON_INSTALL_DIR={HOTFIX_APP_PATH}/.python "
+        f"UV_CACHE_DIR={HOTFIX_APP_PATH}/.uv-cache "
         "uv sync --managed-python && "
         "UV_LINK_MODE=copy uv pip install --python .venv/bin/python debugpy"
     )
