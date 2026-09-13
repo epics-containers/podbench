@@ -32,6 +32,7 @@ def _upload_helpers(kube: Kubectl, pod: str, seat: str) -> str:
         "ide_launchers",
         "ide_python",
         "gdb_support",
+        "gdb_session",
         "debug_model",
         "ssh_agent",
     )

@@ -139,24 +139,16 @@ def launchers(base: Path, folder: Path, home: Path) -> tuple[list, list, set, li
                 continue
             wrapper = base / f"gdb-{pid}"
             wrapper.write_text(
-                "#!/bin/sh\nset -eu\ncd "
-                + shlex.quote(str(home))
-                + "\n"
-                + f"{PYTHON} -c "
-                + shlex.quote(
-                    "from pathlib import Path; import sys; "
-                    f"s=Path('/proc/{pid}/stat').read_text()"
-                    ".rsplit(')',1)[1].split()[19]; "
-                    f"sys.exit(0 if s == {start!r} else "
-                    "'Process restarted; rerun podbench ide vscode')"
-                )
-                + "\nexec "
+                "#!/bin/sh\nexec "
                 + shlex.join(
                     [
-                        "/usr/bin/gdb",
-                        *thread_db_arguments(pid),
-                        "-iex",
-                        f"set sysroot {root}",
+                        "env",
+                        f"PYTHONPATH={Path(__file__).parent.parent}",
+                        PYTHON,
+                        "-m",
+                        "podbench.gdb_session",
+                        str(pid),
+                        start,
                     ]
                 )
                 + ' "$@"\n'
