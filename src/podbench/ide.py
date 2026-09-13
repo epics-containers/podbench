@@ -33,11 +33,17 @@ def _build_app() -> typer.Typer:
         ] = DEFAULT_IDENTITY,
         config_dir: Annotated[str | None, typer.Option()] = None,
         code: Annotated[str, typer.Option(help="local VS Code CLI")] = "code",
+        no_headroom: Annotated[
+            bool, typer.Option(help="use existing pod resources without resizing")
+        ] = False,
+        forward_agent: Annotated[
+            bool, typer.Option(help="forward your loaded SSH agent to the IDE seat")
+        ] = False,
         timeout: Annotated[
             float, typer.Option(min=1, help="resize and server startup timeout")
         ] = 180,
     ) -> None:
-        """Open a seat with Python/C++ debugging, source and forwarded Git identity."""
+        """Open a seat with Python/C++ debugging and source."""
         from .ide_vscode import open_vscode
 
         open_vscode(
@@ -49,6 +55,8 @@ def _build_app() -> typer.Typer:
             config_dir=config_dir,
             code=code,
             timeout=timeout,
+            no_headroom=no_headroom,
+            forward_agent=forward_agent,
         )
 
     return app

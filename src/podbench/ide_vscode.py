@@ -11,7 +11,7 @@ from importlib.resources import files
 from urllib.parse import quote
 
 from .cli import console
-from .doctor import ensure_include
+from .doctor import include_is_active
 from .ide_resources import ensure_headroom
 from .kubectl import Kubectl, KubectlError, run_subprocess
 from .launcher import attach, resolve_pod_name, target_container_name
@@ -36,16 +36,21 @@ def open_vscode(
     config_dir: str | None,
     code: str,
     timeout: float,
+    no_headroom: bool = False,
+    forward_agent: bool = False,
 ) -> None:
-    for binary in (code, "ssh", "ssh-add", "git"):
+    for binary in (code, "ssh", "git", *(("ssh-add",) if forward_agent else ())):
         if shutil.which(binary) is None:
             raise KubectlError(f"{binary} is required on the workstation")
     read_public_key(identity)
-    if not os.environ.get("SSH_AUTH_SOCK"):
+    if not include_is_active(config_dir):
+        raise KubectlError("SSH Include is not active; run podbench doctor --fix first")
+    if forward_agent and not os.environ.get("SSH_AUTH_SOCK"):
         raise KubectlError(
             "start an SSH agent and load your Git key with ssh-add first"
         )
-    _run(["ssh-add", "-l"])
+    if forward_agent:
+        _run(["ssh-add", "-l"])
     git_identity = {}
     for key in ("user.name", "user.email"):
         result = run_subprocess(["git", "config", "--get", key])
@@ -55,7 +60,10 @@ def open_vscode(
             git_identity[key] = result.stdout.strip()
     pod = resolve_pod_name(pod)
     target = target_container_name(kube.get_pod(pod), target)
-    ensure_headroom(kube, pod, target, timeout)
+    if no_headroom:
+        console.print("Using existing pod resources (--no-headroom); skipping resize.")
+    else:
+        ensure_headroom(kube, pod, target, timeout)
     console.print("Preparing the debug seat and SSH...")
     session = attach(kube, pod, target=target, image=image, ssh=True, timeout=timeout)
     if missing_ssh_capabilities(kube, session.seat.pod, session.seat.container) != ():
@@ -68,9 +76,9 @@ def open_vscode(
         session.seat.container,
         identity=identity,
         config_dir=config_dir,
-        forward_agent=True,
+        forward_agent=forward_agent,
+        ide=True,
     )
-    ensure_include(config_dir)
     # Send these small helpers so workstation changes also work with existing images.
     for module in ("ide_remote", "ide_python"):
         source = files("podbench").joinpath(f"{module}.py").read_text()
@@ -87,8 +95,7 @@ def open_vscode(
             stdin=source,
         )
     ssh = ["ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", wiring.alias]
-    agent = _run([*ssh, "ssh-add -l"])
-    if not agent:
+    if forward_agent and not _run([*ssh, "ssh-add -l"]):
         raise KubectlError("SSH agent forwarding did not reach the seat")
     result = _run(
         [*ssh, f"{PYTHON} /tmp/podbench-ide_remote.py prepare"],
