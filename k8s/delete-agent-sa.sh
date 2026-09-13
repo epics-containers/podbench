@@ -38,13 +38,29 @@ command -v kubectl >/dev/null || { echo "kubectl not on PATH" >&2; exit 1; }
 
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
+kubectl_lines() {
+  local -n lines=$1
+  local operation=$2
+  local output identity context
+  shift 2
+  if ! output=$(kubectl "$@"); then
+    identity=$(kubectl auth whoami -o name 2>/dev/null || echo "unknown identity")
+    context=$(kubectl config current-context 2>/dev/null || echo "unknown context")
+    echo "cannot ${operation} in '${NS}' as '${identity}' (context '${context}')" >&2
+    return 1
+  fi
+  lines=()
+  [ -z "$output" ] || mapfile -t lines <<< "$output"
+}
+
 # --- what are we deleting? -------------------------------------------------
 if [ "$ALL" = 1 ]; then
   [ -z "$WHO" ] || { echo "--all and --user are mutually exclusive" >&2; exit 1; }
   # Match on the label make-agent-sa.sh stamps, so an account someone created
   # by hand and happened to call agent-something is left alone.
-  mapfile -t NAMES < <(kubectl -n "$NS" get serviceaccounts -l "$LABEL" \
-                        -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+  kubectl_lines NAMES "list managed ServiceAccounts" -n "$NS" \
+    get serviceaccounts -l "$LABEL" \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'
 else
   if [ -z "$WHO" ]; then
     WHO=${USER:-$(id -un 2>/dev/null || echo unknown)}
@@ -79,10 +95,10 @@ for n in "${NAMES[@]}"; do
 
   # A long-lived token Secret is only present if someone chose that route over
   # `kubectl create token`; it is bound to the SA by annotation, not by name.
-  mapfile -t SECRETS < <(kubectl -n "$NS" get secrets \
+  kubectl_lines SECRETS "list token Secrets for serviceaccount/${n}" -n "$NS" \
+    get secrets \
     --field-selector type=kubernetes.io/service-account-token \
-    -o jsonpath="{range .items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='${n}')]}{.metadata.name}{'\n'}{end}" \
-    2>/dev/null || true)
+    -o jsonpath="{range .items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='${n}')]}{.metadata.name}{'\n'}{end}"
   for s in "${SECRETS[@]}"; do
     [ -n "$s" ] || continue
     echo "  removing bound token secret/${s}"
@@ -104,10 +120,11 @@ done
 # separate revocation step, but it is worth showing rather than asserting.
 echo
 echo "==> remaining in ${NS}:"
-LEFT=$(kubectl -n "$NS" get serviceaccounts -l "$LABEL" \
-        -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
-if [ -n "$LEFT" ]; then
-  printf '%s\n' "$LEFT" | sed 's/^/  /'
+kubectl_lines LEFT "verify managed ServiceAccount deletion" -n "$NS" \
+  get serviceaccounts -l "$LABEL" \
+  -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'
+if [ "${#LEFT[@]}" -gt 0 ]; then
+  printf '  %s\n' "${LEFT[@]}"
 else
   echo "  no accounts created by this script"
 fi
