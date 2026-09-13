@@ -16,10 +16,16 @@ from podbench.gdb_support import thread_db_arguments
 
 
 def _debugpy_source() -> Path | None:
-    """Find a debugpy package to copy: the image's copy, else the claim's."""
+    """Find debugpy in the image, claim, or installed VS Code debugger."""
     candidates = [
         Path("/opt/podbench/debugpy/debugpy"),
         *Path("/podbench/app/.venv/lib").glob("python3.*/site-packages/debugpy"),
+        *sorted(
+            (Path.home() / ".vscode-server/extensions").glob(
+                "ms-python.debugpy-*/bundled/libs/debugpy"
+            ),
+            reverse=True,
+        ),
     ]
     return next((c for c in candidates if (c / "__init__.py").is_file()), None)
 
@@ -44,8 +50,8 @@ def inject(pid: int, start: str, port: int, state_dir: Path | None = None) -> No
         source = _debugpy_source()
         if source is None:
             raise RuntimeError(
-                "no debugpy in the seat image or the hotfix environment; "
-                "rebuild the seat image or run podbench hotfix init"
+                "no debugpy in the seat image, hotfix environment, or VS Code "
+                "debugger extension; rebuild the image or rerun podbench ide vscode"
             )
         shutil.copytree(source, destination / "debugpy", dirs_exist_ok=True)
     environment = {
