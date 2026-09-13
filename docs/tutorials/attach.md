@@ -1,5 +1,17 @@
 # Debug a running IOC with attach
 
+:::{warning}
+Attaching a debugger depends on the host's ptrace policy. This workflow worked on
+DLS RHEL 8 servers with `ptrace_scope=0`; newer DLS RHEL 9 servers use a more
+restrictive setting, which can prevent debugger attachment even when the seat
+connects successfully.
+
+Hotfix can work around this by making the application opt into debugging when it
+restarts. Supporting plain attach on these hosts will require a small change to
+the application containers we ship. Until then, use the [hotfix workflow](hotfix.md)
+on affected servers.
+:::
+
 Inspect P47's PMAC IOC without replacing its application container. You will
 attach a seat, read an IOC backtrace, and open the same application in VS Code.
 Complete [setup](setup.md) first.
