@@ -147,21 +147,36 @@ def wire_ssh(
     forward_agent: bool = False,
 ) -> SSHWiring:
     private_key, public_key = read_public_key(identity)
+    context = (
+        kubectl.context
+        or kubectl.run("config", "current-context", cluster_wide=True).stdout.strip()
+    )
+    if not context:
+        raise KubectlError("no current Kubernetes context; pass --context")
+    kubectl = Kubectl(
+        kubectl.namespace, context=context, binary=kubectl.binary, runner=kubectl.runner
+    )
+    kubeconfig = os.pathsep.join(
+        str(Path(path).expanduser().resolve())
+        for path in (os.environ.get("KUBECONFIG") or "~/.kube/config").split(os.pathsep)
+        if path
+    )
+    connection = hashlib.sha256(f"{context}\0{kubeconfig}".encode()).hexdigest()[:8]
     server = _server_info(kubectl, pod.name, seat, public_key)
     pod_json = kubectl.get_pod(pod.name)
     pod_uid = str(as_dict(pod_json.get("metadata")).get("uid") or pod.name)
     label = _seat_suffix(seat)
-    alias = f"podbench.{pod.namespace}.{pod.name}.{label}"
-    host_key_alias = f"podbench-{pod_uid}-{seat}"
+    alias = f"podbench.{pod.namespace}.{pod.name}.{label}.{connection}"
+    host_key_alias = f"podbench-{connection}-{pod_uid}-{seat}"
 
     directory = client_directory(config_dir)
     config_directory = directory / "config.d"
-    config = config_directory / f"{pod.namespace}-{pod.name}-{label}.conf"
+    config = config_directory / f"{pod.namespace}-{pod.name}-{label}-{connection}.conf"
     known_hosts = directory / "known_hosts"
     _write_known_hosts(known_hosts, host_key_alias, server.host_public_key)
     _ensure_control_dir()
 
-    proxy = [kubectl.binary]
+    proxy = ["env", f"KUBECONFIG={kubeconfig}", kubectl.binary]
     if kubectl.context:
         proxy += ["--context", kubectl.context]
     proxy += [

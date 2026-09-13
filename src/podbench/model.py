@@ -27,6 +27,11 @@ def image_tag_for(version: str) -> str:
     """Use an exact release image, otherwise the prototype branch image."""
     if ".dev" in version or "+" in version or not _OCI_TAG.fullmatch(version):
         return FLOATING_TAG
+    prerelease = re.fullmatch(r"(\d+\.\d+\.\d+)(a|b|rc)(\d+)", version)
+    if prerelease:
+        base, phase, number = prerelease.groups()
+        phase = {"a": "alpha", "b": "beta", "rc": "rc"}[phase]
+        return f"{base}-{phase}.{number}"
     return version
 
 
