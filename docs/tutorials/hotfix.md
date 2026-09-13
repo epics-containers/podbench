@@ -14,14 +14,14 @@ applies to other applications too.
 On your workstation:
 
 ```bash
-podbench hotfix status
+podbench status
 ```
 
-Find your application in the output. For the example, this is
-`p47-blueapi-0/blueapi`, with claim `p47-blueapi-podbench-project`. It should report
-`initialized`; **do not initialize an existing checkout again**. If it is
-missing or says `ready for init`, follow [prepare a workload](../how-to/enable-hotfix.md)
-and return here.
+Find the row for your application: in this example, `p47-blueapi-0` in the
+**POD** column and `blueapi` in **TARGET**. The **HOTFIX** column should say
+`initialized`; **do not initialize an existing checkout again**. If the row is
+missing, or **HOTFIX** shows `—` or `ready for init`, follow
+[prepare a workload](../how-to/enable-hotfix.md) and return here.
 
 ```bash
 podbench ide vscode p47-blueapi-0 --target blueapi
@@ -104,7 +104,7 @@ resetting somebody else's changes. On your workstation:
 
 ```bash
 podbench hotfix restart p47-blueapi-0 --container blueapi
-podbench hotfix status
+podbench status
 kubectl get pod p47-blueapi-0
 ```
 

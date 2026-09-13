@@ -9,7 +9,7 @@ pod, container and application source as appropriate.
 ## Check existing wiring first
 
 ```bash
-podbench hotfix status
+podbench status
 ```
 
 An `initialized` workload is ready to use. A workload marked `ready for init`

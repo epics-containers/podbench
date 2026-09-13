@@ -9,14 +9,13 @@ selects `p47-beamline`. Elsewhere use your context's default or add `-n NAMESPAC
 | Command | Purpose |
 | --- | --- |
 | `podbench doctor [--fix]` | Check prerequisites; optionally install local SSH configuration |
-| `podbench status` | Show seats and hotfix state |
+| `podbench status` | Show seats, hotfix state and probe holds |
 | `podbench attach POD --target CONTAINER` | Add or reuse a seat and print SSH connection details |
 | `podbench ide vscode POD --target CONTAINER` | Open a seat with generated Podbench debug launchers |
 | `podbench hotfix enable DIRECTORY` | Edit a local service chart for hotfix |
 | `podbench hotfix values --app RELEASE --from-pod POD` | Print wiring for manual integration |
 | `podbench hotfix init POD --repo URL [--ref REF]` | Initialize an empty source claim |
 | `podbench hotfix restart POD [--reinstall]` | Restart the child, optionally syncing Python dependencies |
-| `podbench hotfix status` | Show source claims and probe holds |
 | `podbench hotfix retire pvc/CLAIM [--delete-claim]` | Check an unused claim and optionally delete it |
 
 Attach and IDE use `--target`; hotfix commands use **`--container`**. Pass it

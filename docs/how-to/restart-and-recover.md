@@ -30,7 +30,7 @@ refresh debug launchers. Always select a **Podbench** launcher.
 ## Recover after debugging or a failed restart
 
 ```bash
-podbench hotfix status
+podbench status
 kubectl logs p47-blueapi-0 -c blueapi --tail=80
 kubectl get pod p47-blueapi-0
 ```
