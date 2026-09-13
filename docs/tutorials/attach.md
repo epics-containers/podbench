@@ -9,8 +9,12 @@ Complete [setup](setup.md) first.
 On your workstation:
 
 ```bash
-podbench attach bl47p-mo-ioc-01-0 --target bl47p-mo-ioc-01
+podbench attach bl47p-mo-ioc-01-0
 ```
+
+This pod has one application container. For multi-container pods, add
+`--target CONTAINER` to attach or IDE commands; otherwise Podbench selects the
+first application container without an error.
 
 Run the SSH command Podbench prints. You are now **in the seat**, an ephemeral
 container with Git, uv, GDB, strace and process tools. The connection travels
@@ -52,7 +56,7 @@ If you see only addresses, see [troubleshooting](../how-to/troubleshooting.md).
 Back on your workstation:
 
 ```bash
-podbench ide vscode bl47p-mo-ioc-01-0 --target bl47p-mo-ioc-01
+podbench ide vscode bl47p-mo-ioc-01-0
 ```
 
 Accept workspace trust if appropriate for the displayed seat and checkout. Wait
