@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Provision a namespace-confined ServiceAccount for Claude, and prove it is
+# Provision a namespace-confined ServiceAccount for an agent, and prove it is
 # confined.
 #
-#   ./k8s/make-claude-sa.sh <namespace> [--all | --podbench[=TIERS]] [--duration 24h]
+#   ./k8s/make-agent-sa.sh <namespace> [--all | --podbench[=TIERS]] [--duration 24h]
 #
-# Creates `claude-$USER` in <namespace>, a Role and RoleBinding beside it, then
-# writes a self-contained kubeconfig to k8s/<namespace>-claude-<user>.kubeconfig
+# Creates `agent-$USER` in <namespace>, a Role and RoleBinding beside it, then
+# writes a self-contained kubeconfig to k8s/<namespace>-agent-<user>.kubeconfig
 # (gitignored) and runs the confinement checks against it.
 #
 # With no authorization flag, snapshots every resource the parent can read in
@@ -104,7 +104,7 @@ command -v kubectl >/dev/null || { echo "kubectl not on PATH" >&2; exit 1; }
 
 # --- who is this for? ------------------------------------------------------
 # $USER is frequently unset in a devcontainer or a CI shell, and an SA called
-# "claude-" is both invalid and useless for telling two people apart.
+# "agent-" is both invalid and useless for telling two people apart.
 WHO=${USER:-$(id -un 2>/dev/null || echo unknown)}
 # A ServiceAccount name is an RFC 1123 label: lowercase alphanumeric and '-',
 # starting and ending alphanumeric. Diamond's fedids are clean, but a name with
@@ -113,7 +113,7 @@ WHO=${USER:-$(id -un 2>/dev/null || echo unknown)}
 WHO=$(printf '%s' "$WHO" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9-' '-' \
       | sed -e 's/^-*//' -e 's/-*$//')
 [ -n "$WHO" ] || WHO=unknown
-SA="claude-${WHO}"
+SA="agent-${WHO}"
 
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 OUT="${HERE}/${NS}-${SA}.kubeconfig"

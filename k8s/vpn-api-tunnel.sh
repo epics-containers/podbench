@@ -10,7 +10,7 @@
 # `kubectl exec` - so a reachable API server is the whole requirement, and one
 # tunnel supplies it.
 #
-# Takes an existing kubeconfig (one k8s/make-claude-sa.sh wrote, or your own),
+# Takes an existing kubeconfig (one k8s/make-agent-sa.sh wrote, or your own),
 # forwards the API server's address to a local port through <host>, and writes a
 # copy of the kubeconfig pointing at that port. Everything else in it - the
 # token, the CA, the namespace - is carried over untouched.
