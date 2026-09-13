@@ -48,6 +48,8 @@ def processes() -> list[dict]:
             if process is None or "debugpy/adapter" in process.command:
                 continue
             arguments = process.command
+            if name.startswith("python") and "stdio-socket" in arguments:
+                continue
             start = process_start(process.pid)
             cwd = str((entry / "cwd").readlink())
             found.append(
