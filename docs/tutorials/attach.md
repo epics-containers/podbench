@@ -95,16 +95,16 @@ for Remote-SSH and the remote extensions to finish loading, then open **Run and
 Debug**.
 
 :::{important}
-Select the launcher named **`Podbench C/C++ PID: …`** for the IOC executable.
+Select the launcher named **`Podbench: Attach — …`** for the IOC executable.
 **Launchers supplied by the target repository will not work.** Podbench's
-launchers contain the process IDs, filesystem mappings and debugger setup needed
+launchers resolve the current process and supply filesystem mappings and debugger setup needed
 for this seat. Check the `Podbench` prefix before pressing F5.
 :::
 
 Start that launcher, pause briefly, and inspect **Call Stack**, **Threads** and
 **Variables**. Resume with F5; use **Stop Debugging** to disconnect when done.
-After an application restart, rerun `podbench ide vscode …` to regenerate launchers
-for the new PIDs.
+After an application restart, start the same Attach configuration again; it
+resolves the replacement process without regenerating the workspace.
 
 By default, IDE launch adds 4 CPU / 8 GiB of limit headroom and 2 CPU / 4 GiB of
 requests to the live pod (Guaranteed pods reserve the full limit). It requires

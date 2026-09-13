@@ -8,7 +8,7 @@ P47 as an example; substitute your pod, container and claim names.
 On your workstation:
 
 ```bash
-podbench hotfix restart p47-blueapi-0 --container blueapi
+podbench restart p47-blueapi-0 --container blueapi
 ```
 
 The checkout is installed in editable mode by `uv sync`; ordinary Python source
@@ -26,8 +26,15 @@ compile native IOC code. If the child needs longer than the default two-minute
 restart deadline, use `--deadline SECONDS` and check that its probes allow that
 startup time.
 
-After restarting, rerun `podbench ide vscode p47-blueapi-0` to
-refresh debug launchers. Always select a **Podbench** launcher.
+Inside a configured seat, `podbench stop`, `podbench start` and `podbench restart`
+infer the target without Kubernetes credentials. Workstation equivalents accept
+the pod plus `--container`, namespace and context options. Start/Stop are harmless
+when already in the requested state; Start refuses while Launch owns the process.
+
+Start reruns the supervisor's full startup command. VS Code **Podbench: Launch — …**
+runs only the captured process invocation and requires an explicit Stop first.
+VS Code Stop/Restart controls the Launch session. **Podbench: Attach — …** resolves
+the current process each time; ordinary restarts need no workspace regeneration.
 
 ## Recover after debugging or a failed restart
 
@@ -37,11 +44,15 @@ kubectl logs p47-blueapi-0 -c blueapi --tail=80
 kubectl get pod p47-blueapi-0
 ```
 
-`HELD` means probe protection remains active. Stop the debugger, fix or undo your
-source change, then run `hotfix restart` again. Python injection remains in the
-process after disconnecting; a successful child restart removes it and clears
-the hold. Do not merely delete the hold file while the application is still
-stopped or unhealthy.
+Status distinguishes `normal`, `stopped`, `debugger`, `starting`, `failed` and
+`HELD`. Ending Launch intentionally leaves the application stopped and held;
+run Start to resume normal execution. After failed startup, repair the source or
+health check and retry Start. Do not simply delete the hold file.
+
+Attach disconnect leaves the application running and releases its own hold.
+Injected debugpy remains until an application restart. Restart reruns initialization
+and removes that injection. Pod/container replacement discards stopped/debugger
+state and starts normally, while the checkout survives on its claim.
 
 ## Save work and return to the image
 

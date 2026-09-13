@@ -12,6 +12,9 @@ selects `p47-beamline`. Elsewhere use your context's default or add `-n NAMESPAC
 | `podbench status` | Show seats, hotfix state and probe holds |
 | `podbench attach POD --target CONTAINER` | Add or reuse a seat and print SSH connection details |
 | `podbench ide vscode POD --target CONTAINER` | Open a seat with generated Podbench debug launchers |
+| `podbench start POD` | Run the full hotfix startup command and wait for health |
+| `podbench stop POD` | Hold supported probes and deliberately stop the application |
+| `podbench restart POD` | Stop, then start normally |
 | `podbench hotfix enable DIRECTORY` | Edit a local service chart for hotfix |
 | `podbench hotfix values --app RELEASE --from-pod POD` | Print wiring for manual integration |
 | `podbench hotfix init POD --repo URL [--ref REF]` | Initialize an empty source claim |
@@ -22,7 +25,11 @@ Attach and IDE use `--target`; hotfix commands use **`--container`**. Pass it
 consistently for multi-container pods. Use `--help` on any command for all options.
 `--context NAME` selects a context explicitly.
 
-Inside a seat:
+Inside a configured seat, `podbench start`, `podbench stop` and `podbench restart`
+infer the target without Kubernetes credentials. These commands require a current
+seat package as well as updated application supervisor wiring.
+
+Other seat commands:
 
 | Command | Purpose |
 | --- | --- |

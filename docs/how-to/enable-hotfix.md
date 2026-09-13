@@ -12,7 +12,9 @@ pod, container and application source as appropriate.
 podbench status
 ```
 
-An `initialized` workload is ready to use. A workload marked `ready for init`
+An `initialized, normal` workload is ready to use. `legacy wiring` requires
+regenerated supervisor wiring and a rollout, even when the claim is initialized.
+Do not re-run init on that claim. A workload marked `ready for init`
 needs only the initialization step below. Check the current state before making
 changes, even if the workload has been used for hotfix before.
 
@@ -35,6 +37,27 @@ writes the BlueAPI wrapper template. Review all generated files, including new
 ones shown by `git status --short`, then deploy through the beamline's normal
 review and GitOps process. Wait for the replacement pod to become ready before
 continuing. Keep the workload at one replica.
+
+A wrapper-only ConfigMap update may not trigger a rollout. BlueAPI mounts the
+wrapper through `subPath`, so the existing container retains its old file. If
+GitOps has deployed the new ConfigMap but status still says `legacy wiring`,
+arrange an interruption window and replace the pod through a rollout:
+
+```bash
+kubectl rollout restart statefulset/p47-blueapi
+kubectl rollout status statefulset/p47-blueapi
+podbench status
+```
+
+The claim survives; the old seats are replaced. Use the actual controller name
+and kind for another workload. `hotfix enable` reporting `unchanged` means the
+local files already match; it does not confirm that the running pod uses them.
+
+Stop and Launch require hold-aware exec liveness probes or no liveness probe.
+Extending an HTTP/TCP/gRPC failure threshold cannot protect an indefinite stop.
+Readiness remains active. Start checks configured health before releasing its
+hold; generic HTTP checks need `curl` and gRPC checks need `grpc_health_probe`
+in the application image.
 
 For an IOC the equivalent service directory is `services/bl47p-mo-ioc-01` and
 container `bl47p-mo-ioc-01`. Existing values such as `volumes` or `volumeMounts`
@@ -68,7 +91,7 @@ podbench hotfix init p47-blueapi-0 --container blueapi \
 checkouts. Keep an already initialized checkout at its agreed revision.
 Initialization clones the repository, syncs Python projects with uv, adds debugpy,
 and records the source revision and base image. It does not restart the child;
-use `hotfix restart` when ready to run the checkout.
+use `podbench restart POD` when ready to run the checkout.
 
 For a fresh PMAC IOC claim:
 

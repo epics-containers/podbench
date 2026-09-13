@@ -5,10 +5,14 @@ list see the documentation:
 https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
 
+import sys
 from pathlib import Path
 from subprocess import check_output
 
-import podbench
+root = Path(__file__).absolute().parent.parent
+sys.path.insert(0, str(root / "src"))
+
+import podbench  # noqa: E402
 
 # -- General configuration ------------------------------------------------
 

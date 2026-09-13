@@ -22,13 +22,18 @@ build for each Python or startup-script change. Native code still needs a build.
 
 VS Code opens a generated workspace in the seat. Its **Podbench** launchers know
 the target process and its filesystem. Launchers from the application's own
-repository assume a different environment and will not work here. Regenerate
-Podbench launchers whenever the application PID changes.
+repository assume a different environment and will not work here. Attach resolves
+the current process before each session; ordinary PID changes need no regeneration.
+With new hotfix wiring, Stop deliberately holds the application stopped, Start
+reruns its full startup command, and Launch runs only the captured invocation under
+the debugger. Opening VS Code does not stop the application. Ending Launch leaves
+it stopped; ending Attach leaves it running.
 
 Pausing a process affects its real clients. Hotfix wiring allows supported exec
 liveness probes to be held during debugging; readiness may still report the
 application unavailable. Python debugging injects debugpy into the process and
-requires a child restart to remove it and release the hold. Ordinary attach does
+requires a child restart to remove the injection. The generated Attach session
+releases its own probe hold on disconnect. Ordinary attach does
 not automatically protect an unprepared workload from its probes.
 
 IDE resource headroom is applied to the live controller-owned pod, leaving its
