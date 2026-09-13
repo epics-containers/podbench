@@ -23,7 +23,8 @@ def read_process(path: Path) -> Process | None:
             for key, separator, value in [line.partition(":")]
             if separator
         }
-        arguments = (path / "cmdline").read_bytes().rstrip(b"\0").split(b"\0")
+        raw = (path / "cmdline").read_bytes().rstrip(b"\0")
+        arguments = raw.split(b"\0") if raw else []
         printable = [
             " ".join(argument.decode(errors="replace").split())
             for argument in arguments
