@@ -30,6 +30,7 @@ def health_command(container: Mapping[str, Any]) -> str:
                 "curl",
                 "--fail",
                 "--silent",
+                *(["--insecure"] if scheme == "https" else []),
                 "--max-time",
                 str(probe.get("timeoutSeconds", 1)),
                 *headers,

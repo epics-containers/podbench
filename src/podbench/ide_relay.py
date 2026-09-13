@@ -8,6 +8,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 from .ide_process import load
@@ -74,6 +75,7 @@ def run(metadata_path: str, kind: str, arguments: list[str]) -> int:
     if str((root.parent / "ns/mnt").readlink()) != metadata["namespace"]:
         raise RuntimeError("target container changed; reconnect the seat")
     environment = metadata["environment"]
+    commands: Path | None = None
     if kind == "python":
         # debugpy supplies its exact launcher path; copy that complete package so
         # the adapter and launcher use the same protocol and vendored pydevd.
@@ -102,12 +104,17 @@ def run(metadata_path: str, kind: str, arguments: list[str]) -> int:
             else shlex.quote(word)
             for word in words
         ]
-        commands = root / "tmp/podbench-debugger/inferior.gdb"
+        name = f"inferior-{uuid.uuid4().hex}.gdb"
+        commands = root / "tmp/podbench-debugger" / name
         commands.write_text("set exec-wrapper " + " ".join(quoted) + "\n")
         commands.chmod(0o600)
-        argv += ["-ix", "/tmp/podbench-debugger/inferior.gdb"]
+        argv += ["-ix", f"/tmp/podbench-debugger/{name}"]
         environment = {"PATH": "/usr/bin:/bin", "HOME": "/tmp"}
-    return relay(root, argv, metadata["cwd"], environment)
+    try:
+        return relay(root, argv, metadata["cwd"], environment)
+    finally:
+        if commands is not None:
+            commands.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

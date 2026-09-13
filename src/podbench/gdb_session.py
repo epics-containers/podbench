@@ -58,8 +58,8 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, stop)
     try:
         metadata_path = Path(sys.argv[1])
-        session = load(metadata_path.with_suffix(".session"))
         try:
+            session = load(metadata_path.with_suffix(".session"))
             sys.exit(run(session["pid"], session["start"], sys.argv[2:]))
         finally:
             prepare(metadata_path, "release")

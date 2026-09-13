@@ -65,6 +65,11 @@ def response(directory: Path, timeout: float = 135) -> None:
     while not (directory / "response").exists():
         if time.monotonic() > deadline:
             (directory / "cancel").touch()
+            acknowledged = time.monotonic() + 10
+            while not (directory / "response").exists() and (
+                time.monotonic() < acknowledged
+            ):
+                time.sleep(0.05)
             raise RuntimeError(
                 "lifecycle request timed out; inspect podbench status before retrying"
             )

@@ -38,7 +38,9 @@ touch "$request/ready"
 expires=$((SECONDS + DEADLINE + 15))
 while [ ! -f "$request/response" ]; do
   [ "$SECONDS" -lt "$expires" ] || {
-    echo 'request timed out; inspect status' >&2; exit 1
+    touch "$request/cancel"
+    echo 'request timed out; cancellation requested; inspect status' >&2
+    exit 1
   }
   sleep 0.1
 done

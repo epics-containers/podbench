@@ -24,12 +24,16 @@ def prepare(path: Path, operation: str) -> None:
         return
     pid = resolve(metadata)
     token = ""
-    if (root / "tmp/podbench-control/version").exists():
-        if owner.exists():
-            raise RuntimeError("this Attach configuration already owns a session")
-        token = action(root, "hold")
-        owner.write_text(token)
     try:
+        if (root / "tmp/podbench-control/version").exists():
+            try:
+                owner.touch(exist_ok=False)
+            except FileExistsError as error:
+                raise RuntimeError(
+                    "this Attach configuration already owns a session"
+                ) from error
+            token = action(root, "hold")
+            owner.write_text(token)
         if metadata["python"]:
             inject(
                 pid,
@@ -53,7 +57,7 @@ def prepare(path: Path, operation: str) -> None:
     except BaseException:
         if token:
             action(root, "release", token=token)
-            owner.unlink(missing_ok=True)
+        owner.unlink(missing_ok=True)
         raise
 
 

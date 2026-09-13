@@ -164,8 +164,7 @@ while :; do
         fi
         set_state debugger; holds
         owner=$request
-        # Clients open all FIFO ends before publishing ready, preventing a deadlock.
-        exec {input}< "$request/in" {output}> "$request/out" {error}> "$request/err"
+        exec {input}<> "$request/in" {output}> "$request/out" {error}> "$request/err"
         setsid bash "$request/run" <&$input >&$output 2>&$error &
         child=$!
         exec {input}<&- {output}>&- {error}>&-
@@ -191,6 +190,10 @@ while :; do
     [ "$deadline" -le 3600 ] || deadline=3600
     expires=$((SECONDS + deadline))
     while alive && [ "$SECONDS" -lt "$expires" ]; do
+      if [ -e "$request/cancel" ]; then
+        terminate; set_state stopped; holds
+        reply 'error: request cancelled'; continue 2
+      fi
       if timeout 5 bash -c "$health" >/dev/null 2>&1 && alive; then
         set_state normal; holds; break
       fi
