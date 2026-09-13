@@ -1,35 +1,21 @@
-# Podbench
+[![CI](https://github.com/epics-containers/podbench/actions/workflows/ci.yml/badge.svg)](https://github.com/epics-containers/podbench/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/epics-containers/podbench/branch/main/graph/badge.svg)](https://codecov.io/gh/epics-containers/podbench)
+[![PyPI](https://img.shields.io/pypi/v/podbench.svg)](https://pypi.org/project/podbench)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-Debug running Kubernetes applications and iterate on their source without building
-an image for every edit. Podbench provides an ephemeral debugging container
-(a **seat**), SSH access, and VS Code debug launchers. Hotfix adds a persistent
-source checkout and an application restart loop.
+# podbench
 
-Start with the [documentation](https://epics-containers.github.io/podbench/main/):
+Debug running Kubernetes applications with an ephemeral debugging container,
+SSH access and VS Code launchers. Hotfix adds a persistent source checkout so you
+can edit and restart an application without rebuilding its image.
 
-- [Set up for P47](docs/tutorials/installation.md)
-- [Debug a running IOC with attach](docs/tutorials/attach.md)
-- [Edit and debug BlueAPI with hotfix](docs/tutorials/hotfix.md)
-- [Work remotely through an SSH tunnel](docs/how-to/remote-work.md)
+What | Where
+:---: | :---:
+Source | <https://github.com/epics-containers/podbench>
+PyPI | <https://pypi.org/project/podbench/>
+Documentation | <https://epics-containers.github.io/podbench/>
+Releases | <https://github.com/epics-containers/podbench/releases>
 
-At Diamond Light Source:
+<!-- README only content. Anything below this line won't be included in index.md -->
 
-```bash
-module load ec/p47
-module load uv
-uv tool install git+https://github.com/epics-containers/podbench@main
-podbench doctor --fix
-```
-
-This is a prototype. Debugging pauses live application processes; agree a suitable
-session with the beamline team.
-
-To build or preview the docs from a checkout:
-
-```bash
-uv run --locked tox -e docs
-uv run --locked tox -e docs-autobuild
-```
-
-The HTML build is in `build/html`. See [building the docs](docs/how-to/build-docs.md)
-for the Copier configuration and publishing workflow.
+See <https://epics-containers.github.io/podbench/> for setup, tutorials and how-to guides.

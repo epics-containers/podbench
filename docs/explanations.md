@@ -1,5 +1,7 @@
 # Attach and hotfix explained
 
+Podbench is a prototype for rapid iteration on running Kubernetes applications.
+
 A **seat** is an ephemeral container in the application pod. It carries the tools
 needed to inspect another container's processes and serves SSH over `kubectl
 exec`. Attach uses the target container's reported UID, GID and seccomp profile;

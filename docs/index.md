@@ -1,38 +1,56 @@
-# Podbench
+---
+html_theme.sidebar_secondary.remove: true
+---
 
-Debug an application where it is running. **Attach** adds a debugging seat to a
-Kubernetes pod; **hotfix** lets you edit a persistent source checkout and restart
-the application without rebuilding its image.
+```{include} ../README.md
+:end-before: <!-- README only content
+```
 
-These guides use Diamond Light Source's P47 beamline: the PMAC IOC
-`bl47p-mo-ioc-01-0` and BlueAPI `p47-blueapi-0`. Short asides explain what to
-substitute outside DLS.
 
-::::{grid} 1 2 2 2
-:gutter: 3
+How the documentation is structured
+-----------------------------------
 
-:::{grid-item-card} Debug a running IOC
-:link: tutorials/attach
-:link-type: doc
-Connect to P47, select a process, and inspect it in GDB or VS Code.
+Documentation is split into [four categories](https://diataxis.fr), also accessible from links in the top bar.
+
+<!-- https://sphinx-design.readthedocs.io/en/latest/grids.html -->
+
+::::{grid} 2
+:gutter: 4
+
+:::{grid-item-card} {material-regular}`directions_walk;2em`
+```{toctree}
+:maxdepth: 2
+tutorials
+```
++++
+Tutorials for installation and typical usage. New users start here.
 :::
 
-:::{grid-item-card} Edit and debug BlueAPI
-:link: tutorials/hotfix
-:link-type: doc
-Change Python source on the hotfix claim, restart, and hit a breakpoint.
+:::{grid-item-card} {material-regular}`directions;2em`
+```{toctree}
+:maxdepth: 2
+how-to
+```
++++
+Practical step-by-step guides for the more experienced user.
+:::
+
+:::{grid-item-card} {material-regular}`info;2em`
+```{toctree}
+:maxdepth: 2
+explanations
+```
++++
+Explanations of how it works and why it works that way.
+:::
+
+:::{grid-item-card} {material-regular}`menu_book;2em`
+```{toctree}
+:maxdepth: 2
+reference
+```
++++
+Technical reference material including APIs and release notes.
 :::
 
 ::::
-
-Start with [workstation setup](tutorials/installation.md).
-For access from home, see [remote work](how-to/remote-work.md).
-
-```{toctree}
-:maxdepth: 2
-
-tutorials
-how-to
-explanations
-reference
-```
