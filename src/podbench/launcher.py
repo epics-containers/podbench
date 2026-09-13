@@ -1,3 +1,5 @@
+"""Create or reuse a debug seat: an ephemeral container beside the application."""
+
 from __future__ import annotations
 
 import os
@@ -32,6 +34,8 @@ class SeatRef:
 
 @dataclass(frozen=True)
 class Session:
+    """Resolved seat and target identity, with caveats for the CLI to report."""
+
     seat: SeatRef
     target: str
     reused: bool
@@ -105,7 +109,7 @@ def running_seat(
     uid: int | None = None,
     gid: int | None = None,
 ) -> SeatInfo | None:
-    """Return the newest running seat matching the requested container and image."""
+    """Return the newest running seat matching the supplied target, image and IDs."""
     spec = as_dict(pod.get("spec"))
     status = as_dict(pod.get("status"))
     running = {
@@ -139,6 +143,7 @@ def running_seat(
 
 
 def _next_seat_name(pod: Mapping[str, Any]) -> str:
+    # Terminated ephemeral containers remain in the pod spec; names cannot be reused.
     used = {
         str(item.get("name"))
         for key in ("containers", "initContainers", "ephemeralContainers")
@@ -228,6 +233,10 @@ def attach(
     timeout: float = 120.0,
     ssh: bool = False,
 ) -> Session:
+    """Reuse a compatible seat, or create one and wait for it to run.
+
+    Explicit IDs override discovery. ``force_new`` leaves existing seats in place.
+    """
     pod_name = resolve_pod_name(pod_reference)
     pod = kubectl.get_pod(pod_name)
     target = target_container_name(pod, target)
@@ -283,6 +292,7 @@ def kubectl_for(
     binary: str = "kubectl",
     runner: Runner | None = None,
 ) -> Kubectl:
+    """Bind kubectl to the requested namespace or the context's current default."""
     if namespace is None:
         command = [binary]
         if context:

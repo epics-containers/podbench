@@ -32,6 +32,7 @@ def ptrace_warning(process: Process) -> str | None:
 
 
 def thread_db_arguments(pid: int) -> list[str]:
+    """Point GDB at the target's thread library so it matches the target's libc."""
     root = Path(f"/proc/{pid}/root")
     machine = os.uname().machine
     directories = [

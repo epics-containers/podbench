@@ -17,6 +17,7 @@ EXCLUDES = {
 
 
 def prepare(identity: dict) -> dict:
+    """Write the seat's workspace and return paths and extensions for the client."""
     home = Path.home()  # SSH's NSS home, which may differ from kubectl exec's HOME.
     if not home.is_dir() or not os.access(home, os.W_OK):
         raise RuntimeError(f"SSH login home {home} is not writable")

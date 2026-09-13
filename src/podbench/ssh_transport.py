@@ -112,6 +112,7 @@ def include_line(directory: Path) -> str:
 def missing_ssh_capabilities(
     kubectl: Kubectl, pod: PodRef, seat: str
 ) -> tuple[str, ...] | None:
+    """Return missing root SSH capabilities, () if OK, or None if unknown."""
     result = kubectl.exec_(
         pod.name,
         [PYTHON, "-c", CAPABILITY_PROBE],
@@ -147,6 +148,7 @@ def wire_ssh(
     forward_agent: bool = False,
     ide: bool = False,
 ) -> SSHWiring:
+    """Authorize the client in the seat and write a local SSH alias and host key pin."""
     private_key, public_key = read_public_key(identity)
     context = (
         kubectl.context
@@ -157,6 +159,7 @@ def wire_ssh(
     kubectl = Kubectl(
         kubectl.namespace, context=context, binary=kubectl.binary, runner=kubectl.runner
     )
+    # Pin both context and config paths so later shell changes cannot retarget SSH.
     kubeconfig = os.pathsep.join(
         str(Path(path).expanduser().resolve())
         for path in (os.environ.get("KUBECONFIG") or "~/.kube/config").split(os.pathsep)
@@ -170,6 +173,7 @@ def wire_ssh(
     alias = f"podbench.{pod.namespace}.{pod.name}.{label}.{connection}"
     if ide:
         alias += ".ide"
+    # A replacement pod with the same name has a different SSH host identity.
     host_key_alias = f"podbench-{connection}-{pod_uid}-{seat}"
 
     directory = client_directory(config_dir)
@@ -183,6 +187,7 @@ def wire_ssh(
     _write_known_hosts(known_hosts, host_key_alias, server.host_public_key)
     _ensure_control_dir()
 
+    # sshd's inetd mode speaks over exec's stdin/stdout; no pod port is opened.
     proxy = ["env", f"KUBECONFIG={kubeconfig}", kubectl.binary]
     if kubectl.context:
         proxy += ["--context", kubectl.context]

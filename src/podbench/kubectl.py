@@ -89,6 +89,8 @@ class KubectlTimeoutError(KubectlError):
 
 
 class Kubectl:
+    """Run kubectl with a fixed context/namespace and an injectable process runner."""
+
     def __init__(
         self,
         namespace: str,
@@ -165,6 +167,7 @@ class Kubectl:
         return self.run(*args, stdin=stdin, check=check, timeout=timeout)
 
     def add_ephemeral_container(self, pod: str, container: Mapping[str, Any]) -> None:
+        """Append a seat through the ephemeralcontainers subresource."""
         current = self._json(
             self.run(
                 "get", "pod", pod, "--subresource=ephemeralcontainers", "-o", "json"
@@ -177,6 +180,8 @@ class Kubectl:
             if isinstance(existing, list)
             else []
         )
+        # Preserve all existing seats and the resourceVersion read above so a
+        # concurrent update fails rather than overwriting another attachment.
         spec["ephemeralContainers"] = [*containers, dict(container)]
         current["spec"] = spec
         path = f"/api/v1/namespaces/{self.namespace}/pods/{pod}/ephemeralcontainers"
@@ -185,6 +190,7 @@ class Kubectl:
     def wait_for_ephemeral_container(
         self, pod: str, name: str, *, timeout: float = 120.0
     ) -> None:
+        """Wait for running state, failing early on reported startup errors."""
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             statuses = as_dict(self.get_pod(pod).get("status")).get(

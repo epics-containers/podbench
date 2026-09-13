@@ -65,6 +65,7 @@ def _login_name(uid: int) -> str | None:
 
 
 def _ensure_login(layout: ServerLayout, uid: int, gid: int) -> str:
+    """Give sshd a login for the seat's UID through a writable NSS database."""
     if login := _login_name(uid):
         return login
     try:
@@ -185,6 +186,7 @@ def _ensure_config(layout: ServerLayout, *, root: bool) -> None:
 
 
 def ensure_server(public_key: str) -> ServerInfo:
+    """Authorize a client and prepare sshd files; return public connection metadata."""
     uid, gid = os.geteuid(), os.getegid()
     layout = server_layout(uid)
     layout.home.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -201,6 +203,7 @@ def ensure_server(public_key: str) -> ServerInfo:
 
 
 def _idle() -> None:
+    """Keep the seat alive and reap orphaned children when running as PID 1."""
     while True:
         try:
             while os.waitpid(-1, os.WNOHANG)[0]:

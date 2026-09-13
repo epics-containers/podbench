@@ -22,6 +22,7 @@ def write_json(path: Path, value: dict) -> None:
 
 
 def processes() -> list[dict]:
+    """Find readable application ELF processes outside the seat's mount namespace."""
     own_namespace = Path("/proc/self/ns/mnt").readlink()
     found = []
     for entry in sorted(Path("/proc").glob("[0-9]*"), key=lambda p: int(p.name)):
@@ -69,6 +70,7 @@ def processes() -> list[dict]:
 
 
 def launchers(base: Path, folder: Path, home: Path) -> tuple[list, list, set, list]:
+    """Write debugger helpers; return configurations, tasks, extensions and warnings."""
     configurations, tasks, extensions, warnings = [], [], set(), []
     for process in processes():
         pid, start = process["pid"], process["start"]
