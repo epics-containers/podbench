@@ -4,6 +4,9 @@ Use this when your laptop can SSH to a DLS workstation but cannot reach the
 Kubernetes API directly. Podbench's SSH transport uses `kubectl exec`, so an API
 tunnel is sufficient for attach and the generated VS Code launchers.
 
+The commands use P47 as an example. Substitute your beamline module, namespace,
+SSH host and kubeconfig path.
+
 The scripts live in the [Podbench repository](https://github.com/epics-containers/podbench/tree/main/k8s),
 not the installed CLI. Run them from a checkout on each machine that needs them.
 The scripts require Bash, kubectl and OpenSSH; copying permissions with `--all`
@@ -45,8 +48,8 @@ SSH host and **absolute path printed on the DLS host**. For example, replace
 `FEDID` and `DLS_HOST` in:
 
 ```bash
-P47_REMOTE='FEDID@DLS_HOST:/home/FEDID/podbench/k8s/p47-beamline-agent-FEDID.kubeconfig'
-./k8s/vpn-api-tunnel.sh "$P47_REMOTE" \
+REMOTE_KUBECONFIG='FEDID@DLS_HOST:/home/FEDID/podbench/k8s/p47-beamline-agent-FEDID.kubeconfig'
+./k8s/vpn-api-tunnel.sh "$REMOTE_KUBECONFIG" \
   --out "$PWD/k8s/p47-tunnel.kubeconfig"
 export KUBECONFIG="$PWD/k8s/p47-tunnel.kubeconfig"
 kubectl get pods
@@ -82,8 +85,8 @@ If the connection times out after a network change, stop and recreate the tunnel
 using the **same source argument**:
 
 ```bash
-./k8s/vpn-api-tunnel.sh "$P47_REMOTE" --stop
-./k8s/vpn-api-tunnel.sh "$P47_REMOTE" \
+./k8s/vpn-api-tunnel.sh "$REMOTE_KUBECONFIG" --stop
+./k8s/vpn-api-tunnel.sh "$REMOTE_KUBECONFIG" \
   --out "$PWD/k8s/p47-tunnel.kubeconfig"
 kubectl --request-timeout=10s get pods
 ```

@@ -2,7 +2,9 @@
 
 Hotfix needs a single-replica workload, a persistent claim mounted at
 `/podbench/app`, and a supervisor that can restart the application child. Do this
-once, before following the [hotfix tutorial](../tutorials/hotfix.md).
+once, before following the [hotfix tutorial](../tutorials/hotfix.md). The commands
+use BlueAPI and a PMAC IOC on P47 as examples; substitute your service repository,
+pod, container and application source as appropriate.
 
 ## Check existing wiring first
 
@@ -11,12 +13,12 @@ podbench hotfix status
 ```
 
 An `initialized` workload is ready to use. A workload marked `ready for init`
-needs only the initialization step below. P47's PMAC IOC and BlueAPI were already
-initialized when these guides were written.
+needs only the initialization step below. Check the current state before making
+changes, even if the workload has been used for hotfix before.
 
 ## Generate and deploy the chart changes
 
-For a new P47 BlueAPI setup, use your checkout of
+Work in your service repository. For example, to prepare BlueAPI in
 [p47-services](https://github.com/epics-containers/p47-services):
 
 ```bash
@@ -80,4 +82,4 @@ files on a non-empty claim, including a partially initialized one. Inspect and
 back up any contents before deciding how to recover; never clear a shared
 checkout merely to repeat the tutorial.
 
-Now follow [edit and debug BlueAPI](../tutorials/hotfix.md).
+Now follow [edit and debug an application](../tutorials/hotfix.md).

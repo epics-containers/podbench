@@ -1,8 +1,10 @@
-# Command reference
+# Reference
 
-Run workstation commands in the intended Kubernetes context. At DLS,
-`module load ec/p47` sets `p47-beamline` as the default namespace. Elsewhere use
-your context's default or add `-n NAMESPACE`.
+## Commands
+
+Run workstation commands in the intended Kubernetes context. At DLS, your
+beamline module sets the default namespace: for example, `module load ec/p47`
+selects `p47-beamline`. Elsewhere use your context's default or add `-n NAMESPACE`.
 
 | Command | Purpose |
 | --- | --- |

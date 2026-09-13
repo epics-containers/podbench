@@ -1,5 +1,8 @@
 # Restart, recover and retire a hotfix
 
+Manage the hotfix lifecycle for your application. The commands use BlueAPI on
+P47 as an example; substitute your pod, container and claim names.
+
 ## Restart after source or dependency changes
 
 On your workstation:

@@ -1,8 +1,13 @@
-# Edit and debug BlueAPI with hotfix
+# Edit and debug an application with hotfix
 
-Make a small, reversible change to P47 BlueAPI, restart it from its persistent
-checkout, and inspect that change in VS Code. Complete [setup](setup.md)
-and arrange a restart window with the P47 team first.
+Make a small, reversible source change, restart the application from its
+persistent checkout, and inspect the change in VS Code. Complete [setup](setup.md)
+and arrange a restart window with the team responsible for the application first.
+
+The worked example is BlueAPI on P47, pod `p47-blueapi-0`, container `blueapi`.
+Use your own pod, container and source repository for another deployment. The
+example code change is specific to BlueAPI; the edit, restart and debug loop
+applies to other applications too.
 
 ## Check the hotfix checkout
 
@@ -12,9 +17,9 @@ On your workstation:
 podbench hotfix status
 ```
 
-Find `p47-blueapi-0/blueapi`. It should report `initialized` and the claim
-`p47-blueapi-podbench-project`. P47 already had this wiring and checkout when the
-guide was written; **do not initialize an existing checkout again**. If it is
+Find your application in the output. For the example, this is
+`p47-blueapi-0/blueapi`, with claim `p47-blueapi-podbench-project`. It should report
+`initialized`; **do not initialize an existing checkout again**. If it is
 missing or says `ready for init`, follow [prepare a workload](../how-to/enable-hotfix.md)
 and return here.
 
@@ -42,7 +47,7 @@ single logging line immediately before its return:
 ```python
 def health_probe() -> HealthProbeResponse:
     """If able to serve this, server is live and ready for requests."""
-    LOGGER.info("P47 hotfix tutorial: health probe reached")
+    LOGGER.info("Podbench hotfix tutorial: health probe reached")
     return HealthProbeResponse(status=Health.OK)
 ```
 
@@ -107,10 +112,10 @@ Restarting removes the injected debugger and clears the probe hold. Confirm ther
 is no `HELD` state and the application is ready. The checkout remains on its PVC
 for the next session. Rerun the IDE command before debugging the new process.
 
-## Apply the same loop to the P47 IOC
+## Apply the same loop to an IOC
 
-The PMAC IOC uses pod `bl47p-mo-ioc-01-0`, container `bl47p-mo-ioc-01`, and source
-repository `https://github.com/epics-containers/ioc-pmac.git`. Its hotfix entrypoint
+For an IOC example, the PMAC IOC on P47 uses pod `bl47p-mo-ioc-01-0`, container
+`bl47p-mo-ioc-01`, and source repository `https://github.com/epics-containers/ioc-pmac.git`. Its hotfix entrypoint
 uses `/podbench/app/ioc/start.sh` when present. Open its seat and inspect the
 checkout, then edit the startup script for a controlled startup change:
 

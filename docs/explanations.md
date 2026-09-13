@@ -1,4 +1,6 @@
-# Attach and hotfix explained
+# Explanations
+
+## Attach and hotfix
 
 Podbench is a prototype for rapid iteration on running Kubernetes applications.
 

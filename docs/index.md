@@ -38,7 +38,7 @@ Practical step-by-step guides for the more experienced user.
 :::{grid-item-card} {material-regular}`info;2em`
 ```{toctree}
 :maxdepth: 2
-explanations
+Explanations <explanations>
 ```
 +++
 Explanations of how it works and why it works that way.
@@ -47,7 +47,7 @@ Explanations of how it works and why it works that way.
 :::{grid-item-card} {material-regular}`menu_book;2em`
 ```{toctree}
 :maxdepth: 2
-reference
+Reference <reference>
 ```
 +++
 Technical reference material including APIs and release notes.

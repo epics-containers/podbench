@@ -1,4 +1,4 @@
-# Debug a running IOC with attach
+# Debug a running application with attach
 
 :::{warning}
 Attaching a debugger depends on the host's ptrace policy. This workflow worked on
@@ -12,9 +12,12 @@ the application containers we ship. Until then, use the [hotfix workflow](hotfix
 on affected servers.
 :::
 
-Inspect P47's PMAC IOC without replacing its application container. You will
-attach a seat, read an IOC backtrace, and open the same application in VS Code.
-Complete [setup](setup.md) first.
+Inspect a running application without replacing its container. You will attach
+a seat, read a backtrace, and open the same application in VS Code. Complete
+[setup](setup.md) first.
+
+The worked example is the PMAC IOC on P47, pod `bl47p-mo-ioc-01-0`. Substitute
+your own pod name when following the workflow on another beamline or cluster.
 
 ## Attach a seat
 
@@ -74,8 +77,8 @@ quit
 ```
 
 Detaching resumes the application. Exit the SSH shell when finished.
-Source-level inspection needs an image with matching debug symbols and source;
-P47's PMAC IOC used the `ioc-pmac-developer` image when this guide was checked.
+Source-level inspection needs an image with matching debug symbols and source.
+For example, the PMAC IOC uses an `ioc-pmac-developer` image.
 If you see only addresses, see [troubleshooting](../how-to/troubleshooting.md).
 
 ## Use VS Code

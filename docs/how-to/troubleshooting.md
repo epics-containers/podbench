@@ -1,5 +1,8 @@
 # Troubleshoot a debugging session
 
+Use these checks for any debugging session. Commands that name a pod use BlueAPI
+on P47 as an example; substitute your own pod and container.
+
 Start on your workstation:
 
 ```bash
@@ -10,7 +13,7 @@ kubectl get pods
 
 | Symptom | What to check |
 | --- | --- |
-| Wrong pods or no pods | Reload `module load ec/p47` and inspect the current context and namespace. For a tunnel, export its kubeconfig instead. |
+| Wrong pods or no pods | Load your beamline module (for example, `module load ec/p47`) and inspect the current context and namespace. For a tunnel, export its kubeconfig instead. |
 | API timeout from home | Recreate the tunnel and check credential expiry; see [remote work](remote-work.md). |
 | SSH Include missing | Run `podbench doctor --fix`. VS Code must use your normal `~/.ssh/config`. |
 | `Forbidden` | Use the verb and resource in the error to request access. `doctor --fix` cannot grant RBAC. |
