@@ -56,25 +56,5 @@ For the graphical tutorials, install VS Code and its **Remote - SSH** extension,
 and check that `code --version` works. Podbench installs the remote Python and
 C/C++ debugging extensions when opening the seat.
 
-## Choose an application
-
-Use `kubectl get pods` to choose an application in your namespace. The following
-tutorials use these P47 examples:
-
-```bash
-kubectl get pod bl47p-mo-ioc-01-0 p47-blueapi-0
-kubectl get pod bl47p-mo-ioc-01-0 p47-blueapi-0 \
-  -o custom-columns='POD:.metadata.name,CONTAINERS:.spec.containers[*].name'
-```
-
-| Application | Pod | Target container |
-| --- | --- | --- |
-| PMAC IOC | `bl47p-mo-ioc-01-0` | `bl47p-mo-ioc-01` |
-| BlueAPI | `p47-blueapi-0` | `blueapi` |
-
-For another beamline or cluster, use your own pod and container names. If a P47
-name has changed, select its current replacement from `kubectl get pods`. Choose
-the BlueAPI application pod, not its separate OAuth2 proxy.
-
 Continue with [attach](attach.md) or [hotfix](hotfix.md). Both operate on the live
 application: arrange a session with the beamline team before pausing or restarting it.
