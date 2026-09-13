@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Build and publish the docs &#8212; podbench 0.20.1.dev10+gf7e347d0b documentation</title>
+    <title>Build and publish the docs &#8212; podbench 0.20.1.dev15+gb5ab64adc documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=b05cd48e"></script>
+    <script src="../_static/documentation_options.js?v=e3e704f1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -501,6 +501,14 @@ to review the output. For a browser preview that reloads when files change:</p>
 <p>Follow the local URL printed by the command. Edit Markdown pages in <code class="docutils literal notranslate"><span class="pre">docs/</span></code> and
 add them to the appropriate table of contents. Keep tutorials focused on a
 complete task and put optional operations in how-to guides.</p>
+<p>If the preview reports <code class="docutils literal notranslate"><span class="pre">address</span> <span class="pre">already</span> <span class="pre">in</span> <span class="pre">use</span></code>, another server is using its
+port. Stop the previous preview with Ctrl+C in its terminal, or choose another
+port:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>tox<span class="w"> </span>-e<span class="w"> </span>docs-autobuild<span class="w"> </span>--<span class="w"> </span>--port<span class="w"> </span><span class="m">8001</span>
+</pre></div>
+</div>
+<p>This error concerns the preview server; the preceding Sphinx build may have
+completed successfully.</p>
 <p>The project uses the Diamond Light Source Python Copier template, pinned in
 <code class="docutils literal notranslate"><span class="pre">.copier-answers.yml</span></code> with <code class="docutils literal notranslate"><span class="pre">docs_type:</span> <span class="pre">sphinx</span></code>. The Sphinx conversion was generated
 with:</p>

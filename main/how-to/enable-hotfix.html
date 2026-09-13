@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Prepare a workload for hotfix &#8212; podbench 0.20.1.dev10+gf7e347d0b documentation</title>
+    <title>Prepare a workload for hotfix &#8212; podbench 0.20.1.dev15+gb5ab64adc documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=b05cd48e"></script>
+    <script src="../_static/documentation_options.js?v=e3e704f1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -499,11 +499,38 @@ pod, container and application source as appropriate.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>status
 </pre></div>
 </div>
-<p>An <code class="docutils literal notranslate"><span class="pre">initialized,</span> <span class="pre">normal</span></code> workload is ready to use. <code class="docutils literal notranslate"><span class="pre">legacy</span> <span class="pre">wiring</span></code> requires
-regenerated supervisor wiring and a rollout, even when the claim is initialized.
-Do not re-run init on that claim. A workload marked <code class="docutils literal notranslate"><span class="pre">ready</span> <span class="pre">for</span> <span class="pre">init</span></code>
-needs only the initialization step below. Check the current state before making
-changes, even if the workload has been used for hotfix before.</p>
+<p>Read both parts of the <code class="docutils literal notranslate"><span class="pre">HOTFIX</span></code> column: the checkout state and the supervisor
+state. For example:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>HOTFIX</p></th>
+<th class="head"><p>Next step</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initialized,</span> <span class="pre">normal</span></code></p></td>
+<td><p>Already prepared; continue with the hotfix tutorial.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ready</span> <span class="pre">for</span> <span class="pre">init,</span> <span class="pre">normal</span></code></p></td>
+<td><p>Wiring is in place; initialize the empty claim below.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initialized,</span> <span class="pre">legacy</span> <span class="pre">wiring</span></code></p></td>
+<td><p>Update the wiring and roll out the pod; keep the existing checkout.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ready</span> <span class="pre">for</span> <span class="pre">init,</span> <span class="pre">legacy</span> <span class="pre">wiring</span></code></p></td>
+<td><p>Update the wiring and roll out the pod, then initialize the empty claim.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initialized,</span> <span class="pre">normal,</span> <span class="pre">HELD</span></code></p></td>
+<td><p>A probe hold is active; finish or coordinate the existing debugging session before continuing.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ready</span> <span class="pre">for</span> <span class="pre">init</span></code> alone does not confirm that the supervisor is current. Check
+the full state even if the workload has been used for hotfix before.</p>
+<p><code class="docutils literal notranslate"><span class="pre">HELD</span></code> can accompany other states too, such as <code class="docutils literal notranslate"><span class="pre">stopped</span></code> or <code class="docutils literal notranslate"><span class="pre">failed</span></code>. Follow
+<a class="reference internal" href="restart-and-recover.html"><span class="std std-doc">restart and recovery</span></a> to resolve the hold before
+continuing; do not delete the hold file manually.</p>
 </section>
 <section id="generate-and-deploy-the-chart-changes">
 <h2>Generate and deploy the chart changes<a class="headerlink" href="#generate-and-deploy-the-chart-changes" title="Link to this heading">#</a></h2>
@@ -534,6 +561,9 @@ podbench<span class="w"> </span>status
 <p>The claim survives; the old seats are replaced. Use the actual controller name
 and kind for another workload. <code class="docutils literal notranslate"><span class="pre">hotfix</span> <span class="pre">enable</span></code> reporting <code class="docutils literal notranslate"><span class="pre">unchanged</span></code> means the
 local files already match; it does not confirm that the running pod uses them.</p>
+<p>After the rollout, an empty claim should show <code class="docutils literal notranslate"><span class="pre">ready</span> <span class="pre">for</span> <span class="pre">init,</span> <span class="pre">normal</span></code>. An
+existing initialized claim should show <code class="docutils literal notranslate"><span class="pre">initialized,</span> <span class="pre">normal</span></code>; skip initialization
+for that claim.</p>
 <p>Stop and Launch require hold-aware exec liveness probes or no liveness probe.
 Extending an HTTP/TCP/gRPC failure threshold cannot protect an indefinite stop.
 Readiness remains active. Start checks configured health before releasing its
@@ -577,6 +607,9 @@ use <code class="docutils literal notranslate"><span class="pre">podbench</span>
 files on a non-empty claim, including a partially initialized one. Inspect and
 back up any contents before deciding how to recover; never clear a shared
 checkout merely to repeat the tutorial.</p>
+<p>Run <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">status</span></code> again after initialization. The checkout state should have
+changed from <code class="docutils literal notranslate"><span class="pre">ready</span> <span class="pre">for</span> <span class="pre">init</span></code> to <code class="docutils literal notranslate"><span class="pre">initialized</span></code>, giving <code class="docutils literal notranslate"><span class="pre">initialized,</span> <span class="pre">normal</span></code> when
+the application is running normally.</p>
 <p>Now follow <a class="reference internal" href="../tutorials/hotfix.html"><span class="std std-doc">edit and debug an application</span></a>.</p>
 </section>
 </section>

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Troubleshoot a debugging session &#8212; podbench 0.20.1.dev10+gf7e347d0b documentation</title>
+    <title>Troubleshoot a debugging session &#8212; podbench 0.20.1.dev15+gb5ab64adc documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=b05cd48e"></script>
+    <script src="../_static/documentation_options.js?v=e3e704f1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -520,24 +520,27 @@ kubectl<span class="w"> </span>get<span class="w"> </span>pods
 <td><p>The cluster needs in-place resize, <code class="docutils literal notranslate"><span class="pre">patch</span> <span class="pre">pods/resize</span></code>, <code class="docutils literal notranslate"><span class="pre">patch</span> <span class="pre">pods</span></code> and <code class="docutils literal notranslate"><span class="pre">list</span> <span class="pre">limitranges</span></code>, plus enough resources. Use <code class="docutils literal notranslate"><span class="pre">--no-headroom</span></code> only if the pod already has room.</p></td>
 </tr>
 <tr class="row-odd"><td><p>Debugger fails or starts another application</p></td>
-<td><p>Choose <strong>Podbench: Attach — …</strong> or <strong>Podbench: Launch — …</strong> in Run and Debug. The target repository’s launchers will not work.</p></td>
+<td><p>Choose the generated <strong>Podbench: Attach — …</strong> or <strong>Podbench: Launch — …</strong> entry in Run and Debug; it supplies the seat’s filesystem mappings and debugger setup.</p></td>
 </tr>
 <tr class="row-even"><td><p>Process exited / PID changed</p></td>
 <td><p>Retry the same Attach configuration; it resolves the current process. If there is no match, Start the application. If ambiguous, identify the duplicate invocation.</p></td>
 </tr>
-<tr class="row-odd"><td><p>Python breakpoint is unbound</p></td>
+<tr class="row-odd"><td><p>Pod replaced</p></td>
+<td><p>Rerun <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">ide</span> <span class="pre">vscode</span> <span class="pre">POD</span></code> from your workstation to connect to a seat in the replacement pod. Retrying Attach in the old workspace is not enough.</p></td>
+</tr>
+<tr class="row-even"><td><p>Python breakpoint is unbound</p></td>
 <td><p>Check the selected server invocation and source path. Use <code class="docutils literal notranslate"><span class="pre">/podbench/app</span></code> for hotfix source, or the target filesystem shown in the generated workspace for image source.</p></td>
 </tr>
-<tr class="row-even"><td><p>GDB shows addresses without source</p></td>
+<tr class="row-odd"><td><p>GDB shows addresses without source</p></td>
 <td><p>Use matching debug symbols and source. An IOC developer image helps; a runtime image may have stripped them.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ptrace:</span> <span class="pre">Operation</span> <span class="pre">not</span> <span class="pre">permitted</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ptrace:</span> <span class="pre">Operation</span> <span class="pre">not</span> <span class="pre">permitted</span></code></p></td>
 <td><p>Check target UID, seccomp and Yama policy. Attach cannot bypass them; hotfix initialization supplies a debugging shim for dynamically linked application processes after restart.</p></td>
 </tr>
-<tr class="row-even"><td><p>Hotfix is <code class="docutils literal notranslate"><span class="pre">HELD</span></code></p></td>
+<tr class="row-odd"><td><p>Hotfix is <code class="docutils literal notranslate"><span class="pre">HELD</span></code></p></td>
 <td><p>After Launch, run Start; after failed startup, repair the cause then retry Start. See <a class="reference internal" href="restart-and-recover.html"><span class="std std-doc">recovery</span></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p>Init says claim is not empty</p></td>
+<tr class="row-even"><td><p>Init says claim is not empty</p></td>
 <td><p>Inspect existing work or a partial init. Do not erase it to make init succeed.</p></td>
 </tr>
 </tbody>

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Edit and debug an application with hotfix &#8212; podbench 0.20.1.dev10+gf7e347d0b documentation</title>
+    <title>Edit and debug an application with hotfix &#8212; podbench 0.20.1.dev15+gb5ab64adc documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=b05cd48e"></script>
+    <script src="../_static/documentation_options.js?v=e3e704f1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -487,32 +487,74 @@
                   
   <section id="edit-and-debug-an-application-with-hotfix">
 <h1>Edit and debug an application with hotfix<a class="headerlink" href="#edit-and-debug-an-application-with-hotfix" title="Link to this heading">#</a></h1>
-<p>Edit the persistent checkout, restart normally, then use VS Code Launch for
-startup breakpoints or Attach to inspect the running process. Complete
-<a class="reference internal" href="setup.html"><span class="std std-doc">setup</span></a> and arrange an interruption window with the application owner.</p>
-<p>This example uses BlueAPI on P47: pod <code class="docutils literal notranslate"><span class="pre">p47-blueapi-0</span></code>, container <code class="docutils literal notranslate"><span class="pre">blueapi</span></code>.
-Substitute your application’s pod, container and source repository.</p>
+<p>In this tutorial you will open BlueAPI’s persistent source checkout in VS Code,
+make an edit, and restart BlueAPI to try it. In the same VS Code window, you will
+then use breakpoints to inspect the application: <strong>Launch</strong> starts it under the
+debugger, while <strong>Attach</strong> connects to the running process. Finally, you will
+undo the tutorial edit and return BlueAPI to normal operation.</p>
+<p>Complete <a class="reference internal" href="setup.html"><span class="std std-doc">setup</span></a> first and arrange an interruption window with the
+application owner: stopping the server or pausing at a breakpoint interrupts
+its service. The example uses BlueAPI on P47, with pod <code class="docutils literal notranslate"><span class="pre">p47-blueapi-0</span></code> and
+container <code class="docutils literal notranslate"><span class="pre">blueapi</span></code>. Substitute your own pod, container and source repository
+when working on another application.</p>
 <section id="check-the-checkout-and-lifecycle-wiring">
 <h2>Check the checkout and lifecycle wiring<a class="headerlink" href="#check-the-checkout-and-lifecycle-wiring" title="Link to this heading">#</a></h2>
 <p>On your workstation:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>status
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>module<span class="w"> </span>load<span class="w"> </span>ec/p47
+podbench<span class="w"> </span>status
 </pre></div>
 </div>
-<p>Find <code class="docutils literal notranslate"><span class="pre">p47-blueapi-0</span></code> / <code class="docutils literal notranslate"><span class="pre">blueapi</span></code>. Its hotfix state should include <code class="docutils literal notranslate"><span class="pre">initialized</span></code>
-and <code class="docutils literal notranslate"><span class="pre">normal</span></code>. <strong>Do not initialize an existing checkout again.</strong> <code class="docutils literal notranslate"><span class="pre">legacy</span> <span class="pre">wiring</span></code>
-means the supervisor needs updating and a pod rollout; follow
-<a class="reference internal" href="../how-to/enable-hotfix.html"><span class="std std-doc">prepare a workload</span></a>. <code class="docutils literal notranslate"><span class="pre">ready</span> <span class="pre">for</span> <span class="pre">init</span></code> means the claim
-still needs initialization.</p>
+<p>If this is the first time the workload has been used for hotfix, follow
+<a class="reference internal" href="../how-to/enable-hotfix.html"><span class="std std-doc">Prepare a workload for hotfix</span></a> first. It walks you
+through generating and deploying the chart changes, replacing the pod, and
+initializing its persistent source checkout. If someone has already prepared
+the workload, use the status output to see how far they got.</p>
+<p>Look for <code class="docutils literal notranslate"><span class="pre">p47-blueapi-0</span></code> in the <code class="docutils literal notranslate"><span class="pre">POD</span></code> column and <code class="docutils literal notranslate"><span class="pre">blueapi</span></code> in <code class="docutils literal notranslate"><span class="pre">TARGET</span></code>. After the
+chart changes have been deployed and the pod replaced, but before the checkout
+is initialized, its row looks like this:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>POD             TARGET   SEAT  HOTFIX
+p47-blueapi-0   blueapi  —     ready for init, normal
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ready</span> <span class="pre">for</span> <span class="pre">init</span></code> means you still need the <strong>Initialize an empty claim</strong> step in
+the preparation guide. Once you have completed that step, run <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">status</span></code>
+again. You are looking for:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>POD             TARGET   SEAT  HOTFIX
+p47-blueapi-0   blueapi  —     initialized, normal
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">initialized</span></code> means the persistent checkout has been created; <code class="docutils literal notranslate"><span class="pre">normal</span></code> means the
+application is running under the lifecycle supervisor. The <code class="docutils literal notranslate"><span class="pre">SEAT</span></code> column can be
+empty at this point—you will create or reconnect to a seat when you open VS Code.</p>
+<p>If the row instead contains <code class="docutils literal notranslate"><span class="pre">legacy</span> <span class="pre">wiring</span></code>, follow the preparation guide to
+update the supervisor and roll out a replacement pod. An existing initialized
+checkout survives that rollout and does not need initializing again.</p>
+<p>On later visits, <code class="docutils literal notranslate"><span class="pre">initialized,</span> <span class="pre">normal</span></code> means you can go straight to opening
+VS Code. Rerunning <code class="docutils literal notranslate"><span class="pre">hotfix</span> <span class="pre">enable</span></code> regenerates the local chart files and reports
+<code class="docutils literal notranslate"><span class="pre">unchanged</span></code> when they already match; it does not deploy changes or restart the
+pod. Rerunning <code class="docutils literal notranslate"><span class="pre">hotfix</span> <span class="pre">init</span></code> on an initialized claim is refused, preserving the
+existing checkout.</p>
+</section>
+<section id="open-the-checkout-in-vs-code">
+<h2>Open the checkout in VS Code<a class="headerlink" href="#open-the-checkout-in-vs-code" title="Link to this heading">#</a></h2>
+<p>On your workstation, run:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>ide<span class="w"> </span>vscode<span class="w"> </span>p47-blueapi-0
 </pre></div>
 </div>
-<p>Opening the IDE leaves BlueAPI running. In the seat’s terminal:</p>
+<p>VS Code connects to a debug seat beside the application. Opening it leaves
+BlueAPI running. Open a terminal in that VS Code window and inspect the
+persistent checkout:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/podbench/app
 git<span class="w"> </span>status<span class="w"> </span>--short
 git<span class="w"> </span>diff
 </pre></div>
 </div>
-<p>Keep existing edits. The source on the claim can differ from the image version.</p>
+<p>If both Git commands produce no output, the checkout has no tracked changes or
+untracked files. Otherwise, review the changes before adding your own: this
+checkout may contain someone else’s work and may be at a different revision
+from the container image. Keep those existing edits throughout the tutorial.</p>
+<p>The commands below say whether to run them in this <strong>seat terminal</strong> or on your
+<strong>workstation</strong>. Keep both available.</p>
 </section>
 <section id="edit-and-run-normally">
 <h2>Edit and run normally<a class="headerlink" href="#edit-and-run-normally" title="Link to this heading">#</a></h2>
@@ -524,85 +566,157 @@ logging line just before its return:</p>
     <span class="k">return</span> <span class="n">HealthProbeResponse</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">Health</span><span class="o">.</span><span class="n">OK</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Save, then run in the configured seat:</p>
+<p>Save the file. In the seat terminal, restart BlueAPI to load the edited source:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>restart
-curl<span class="w"> </span>-fsS<span class="w"> </span>http://127.0.0.1:8000/healthz
 </pre></div>
 </div>
-<p>Restart reruns the full startup command and waits for health checks. Its spinner
-may remain visible while BlueAPI initializes devices. Check the new log message
-from your workstation:</p>
+<p>This stops the application child, reruns its full startup command, and waits
+for health checks. It keeps the pod and your VS Code connection in place. The
+spinner may remain visible while BlueAPI initializes devices; wait for the
+command to finish before continuing.</p>
+<p>Now request the health endpoint from the seat terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-fsS<span class="w"> </span>http://127.0.0.1:8000/healthz
+</pre></div>
+</div>
+<p>You should receive a successful health response. On your workstation, inspect
+the application log:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>kubectl<span class="w"> </span>logs<span class="w"> </span>p47-blueapi-0<span class="w"> </span>-c<span class="w"> </span>blueapi<span class="w"> </span>--tail<span class="o">=</span><span class="m">40</span>
 </pre></div>
 </div>
-<p>The health request does not execute a plan or move hardware. Ordinary Python
-source edits need no reinstall. For dependency changes, use workstation
-<code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">hotfix</span> <span class="pre">restart</span> <span class="pre">p47-blueapi-0</span> <span class="pre">--container</span> <span class="pre">blueapi</span> <span class="pre">--reinstall</span></code>; see
-<a class="reference internal" href="../how-to/restart-and-recover.html"><span class="std std-doc">restart and recover</span></a>.</p>
+<p>Look for a line containing:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Podbench hotfix tutorial: health probe reached
+</pre></div>
+</div>
+<p>It may appear several times because Kubernetes also calls the health endpoint.
+Seeing this message confirms that BlueAPI is executing your edited checkout.
+If it is missing, check that you saved the file and that the restart succeeded
+before moving on.</p>
+<p>This Python source edit needs no reinstall. If you change dependencies as well,
+follow <a class="reference internal" href="../how-to/restart-and-recover.html"><span class="std std-doc">restart and recover</span></a> to reinstall them.</p>
 </section>
 <section id="launch-under-the-debugger">
 <h2>Launch under the debugger<a class="headerlink" href="#launch-under-the-debugger" title="Link to this heading">#</a></h2>
-<p>In the seat terminal, stop the application deliberately:</p>
+<p>Use Launch when you want to debug startup or rerun the application after an
+edit. First, stop the running application from the seat terminal:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>stop
 </pre></div>
 </div>
-<p>Alternatively, run the generated <strong>Podbench: Stop</strong> task. Supported liveness
-probes stay held; readiness remains active and can mark BlueAPI unavailable.</p>
-<p>Open <strong>Run and Debug</strong> and select <strong>Podbench: Launch — …</strong> for the BlueAPI server
-invocation. Use the generated Podbench configuration, not a launcher supplied by
-the application repository. Launch refuses while the application is running.</p>
-<p>Set a breakpoint on a startup line in the BlueAPI source and press F5. Launch
-runs the captured server invocation inside the application container, with its
-original interpreter, environment and working directory. It does not rerun the
-parent startup script; use Start for that.</p>
-<p>Inspect <strong>Call Stack</strong> and <strong>Variables</strong>, then continue. You can also break on
-your new health logging line and request <code class="docutils literal notranslate"><span class="pre">/healthz</span></code> from the seat terminal.
-Resume promptly because real clients and readiness checks depend on the server.</p>
-<p>Edit and save a line, then use VS Code’s <strong>Restart</strong> debugging control to launch
-again. The workspace and seat stay connected; no PID refresh is needed. <strong>Stop
-Debugging</strong>, process exit, or loss of the launch transport leaves the application
-stopped and held. Restore normal execution with:</p>
+<p>The command should finish with the application stopped. To check, run
+<code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">status</span></code> on your workstation. The <code class="docutils literal notranslate"><span class="pre">HOTFIX</span></code> column should now contain:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>initialized, stopped, HELD
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">HELD</span></code> means Podbench is keeping the hold-aware liveness check satisfied so
+Kubernetes does not restart the container while you debug. Readiness checks
+continue, so the pod may show as unready while the application is stopped.</p>
+<p>In VS Code:</p>
+<ol class="arabic simple">
+<li><p>Open <strong>Run and Debug</strong> and choose the <strong>Podbench: Launch — …</strong> entry whose
+command is the BlueAPI server. The text after the dash depends on how your
+deployment starts BlueAPI.</p></li>
+<li><p>Set a breakpoint on the logging line you added. To investigate startup, you
+can also set one on a line that runs while the server starts.</p></li>
+<li><p>Press <strong>F5</strong> to launch. If Podbench reports that the application is already
+running, run <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">stop</span></code> in the seat terminal and try again.</p></li>
+</ol>
+<p>Launch runs the selected server command inside the application container, using
+its captured interpreter, environment and working directory. It runs that
+command directly; <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">start</span></code> reruns the full parent startup script.</p>
+<p>Once the server is listening, request the health endpoint from the seat terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-fsS<span class="w"> </span>http://127.0.0.1:8000/healthz
+</pre></div>
+</div>
+<p>VS Code should pause on your logging line. A Kubernetes health check may reach
+the breakpoint before your request does. Inspect <strong>Call Stack</strong> and <strong>Variables</strong>,
+then press <strong>F5</strong> to continue. A request waiting on the breakpoint will remain
+pending until you resume execution.</p>
+<p>To try an edit during this session, change the log message and save the file,
+then use VS Code’s <strong>Restart</strong> debugging control. It launches the server again
+with your saved changes; the workspace and seat stay connected.</p>
+<p>When finished, choose <strong>Stop Debugging</strong>. Ending a Launch session leaves the
+application stopped and held, including if the launched process exits or its
+connection is lost. In the seat terminal, restore normal execution:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>start
 </pre></div>
 </div>
-<p>The generated <strong>Podbench: Start</strong> task performs the same operation. If these
-terminal commands are missing, the seat has an older Podbench package; see
-<a class="reference internal" href="../how-to/troubleshooting.html"><span class="std std-doc">troubleshooting</span></a>.</p>
+<p>Wait for startup to complete. Workstation <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">status</span></code> should again show
+<code class="docutils literal notranslate"><span class="pre">initialized,</span> <span class="pre">normal</span></code>, with no <code class="docutils literal notranslate"><span class="pre">HELD</span></code> marker.</p>
+<p>You can also run <strong>Podbench: Stop</strong> and <strong>Podbench: Start</strong> through VS Code’s
+<strong>Tasks: Run Task</strong> command. If the terminal commands are missing, see
+<a class="reference internal" href="../how-to/troubleshooting.html"><span class="std std-doc">troubleshooting</span></a> to update the seat’s Podbench
+package.</p>
 </section>
 <section id="attach-to-the-running-process">
 <h2>Attach to the running process<a class="headerlink" href="#attach-to-the-running-process" title="Link to this heading">#</a></h2>
-<p>Select <strong>Podbench: Attach — …</strong> for the server and press F5. Podbench resolves the
-current matching process before each session, including after Stop/Start. You do
-not need to reopen the workspace. No match or multiple matches produces an error.</p>
-<p>Set a breakpoint on the logging line and call <code class="docutils literal notranslate"><span class="pre">/healthz</span></code>. Disconnect when done:
-Attach leaves the server running and releases only its session’s probe hold.
-Injected debugpy may remain until the next application restart.</p>
+<p>Use Attach to inspect BlueAPI while it is already running. Wait for the previous
+section’s <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">start</span></code> to complete before attaching.</p>
+<p>The restarted server has a new PID. Each time you start a <strong>Podbench: Attach</strong>
+session, its preparation task finds the current process by matching the
+executable and command arguments in the same application container. It uses
+that process’s PID, so you can reuse the configuration after Stop/Start.</p>
+<p>In VS Code:</p>
+<ol class="arabic">
+<li><p>In <strong>Run and Debug</strong>, choose <strong>Podbench: Attach — …</strong> for the BlueAPI server.</p></li>
+<li><p>Keep a breakpoint on your logging line and press <strong>F5</strong> to attach.</p></li>
+<li><p>Run the health request from the seat terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-fsS<span class="w"> </span>http://127.0.0.1:8000/healthz
+</pre></div>
+</div>
+</li>
+</ol>
+<p>Inspect the paused process as before, then continue and disconnect the debugger.
+Ending an Attach session leaves the server running and releases that session’s
+probe hold. The injected Python debugger may remain loaded until the next
+application restart.</p>
+<p>If Podbench cannot find a matching process, confirm the application is running.
+If the executable or command arguments have changed, rerun <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">ide</span> <span class="pre">vscode</span></code>
+from your workstation to regenerate the configurations. Reconnect after a pod
+replacement too. If several processes match, resolve the ambiguity before
+retrying; see <a class="reference internal" href="../how-to/troubleshooting.html"><span class="std std-doc">troubleshooting</span></a>.</p>
 </section>
 <section id="undo-the-tutorial-change">
 <h2>Undo the tutorial change<a class="headerlink" href="#undo-the-tutorial-change" title="Link to this heading">#</a></h2>
-<p>End debugging and remove only the logging line you added. In the seat, run
-<code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">start</span></code> if Launch left the application stopped, or <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">restart</span></code>
-if it is already running. From the workstation, check:</p>
+<p>End any debugging session, remove the logging line you added, and save the file.
+Review your diff in the seat terminal to confirm that you have kept any edits
+that were there before the tutorial:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>diff
+</pre></div>
+</div>
+<p>If BlueAPI is running, load the restored source with <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">restart</span></code> in the
+seat terminal. If Launch left it stopped, use <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">start</span></code> instead. Wait for
+the command to finish, then check from your workstation:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>status
 kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>p47-blueapi-0
 </pre></div>
 </div>
-<p>Confirm normal execution, no remaining hold, readiness and an unchanged
-application-container restart count. The checkout remains on its PVC.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">HOTFIX</span></code> column should show <code class="docutils literal notranslate"><span class="pre">initialized,</span> <span class="pre">normal</span></code> without <code class="docutils literal notranslate"><span class="pre">HELD</span></code>. In the pod
+listing, check that all containers are ready. Starting and stopping the
+application child should not increase Kubernetes’ container restart count.</p>
+<p>You can now close VS Code. The checkout stays on the persistent claim, ready for
+your next session; you do not need to initialize it again.</p>
 </section>
 <section id="apply-the-same-loop-to-an-ioc">
 <h2>Apply the same loop to an IOC<a class="headerlink" href="#apply-the-same-loop-to-an-ioc" title="Link to this heading">#</a></h2>
-<p>For the P47 PMAC IOC, use pod <code class="docutils literal notranslate"><span class="pre">bl47p-mo-ioc-01-0</span></code>, container <code class="docutils literal notranslate"><span class="pre">bl47p-mo-ioc-01</span></code>,
-and source repository <code class="docutils literal notranslate"><span class="pre">https://github.com/epics-containers/ioc-pmac.git</span></code>.
-Its hotfix entrypoint uses <code class="docutils literal notranslate"><span class="pre">/podbench/app/ioc/start.sh</span></code> when present.</p>
+<p>The same Stop → Launch → Start and Attach workflows apply to a native IOC.
+For the P47 PMAC IOC, first follow the IOC example in
+<a class="reference internal" href="../how-to/enable-hotfix.html"><span class="std std-doc">Prepare a workload for hotfix</span></a>. It uses pod
+<code class="docutils literal notranslate"><span class="pre">bl47p-mo-ioc-01-0</span></code>, container <code class="docutils literal notranslate"><span class="pre">bl47p-mo-ioc-01</span></code>, and the
+<a class="reference external" href="https://github.com/epics-containers/ioc-pmac"><code class="docutils literal notranslate"><span class="pre">ioc-pmac</span></code> source repository</a>.</p>
+<p>Then open its seat from your workstation:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>ide<span class="w"> </span>vscode<span class="w"> </span>bl47p-mo-ioc-01-0<span class="w"> </span>--target<span class="w"> </span>bl47p-mo-ioc-01
 </pre></div>
 </div>
-<p>Use the generated native <strong>Podbench: Launch — …</strong> or <strong>Podbench: Attach — …</strong>
-configuration for the IOC executable. Start reruns the startup script; Launch
-runs the selected executable under GDB in the application container. Native
-source edits require the IOC’s build procedure before launching the rebuilt
-binary. Cloning <code class="docutils literal notranslate"><span class="pre">ioc-pmac</span></code> alone does not replace the image’s support binaries.</p>
+<p>Choose the generated <strong>Podbench: Attach — …</strong> entry for the IOC executable to
+inspect the running IOC. To debug startup, run <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">stop</span></code> in the seat and
+choose its <strong>Podbench: Launch — …</strong> entry. This launches the executable under
+GDB inside the application container. When you end Launch, run <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">start</span></code>
+to return to normal operation.</p>
+<p>For this IOC, Start reruns the startup script, using
+<code class="docutils literal notranslate"><span class="pre">/podbench/app/ioc/start.sh</span></code> when present. Launch runs the selected executable
+directly, as in the BlueAPI example.</p>
+<p>Native source changes also need a build: follow the IOC’s build procedure and
+ensure the launched executable is the rebuilt binary. Cloning <code class="docutils literal notranslate"><span class="pre">ioc-pmac</span></code> into
+the checkout alone does not replace the support binaries supplied by the image.</p>
 </section>
 </section>
 
@@ -654,6 +768,7 @@ binary. Cloning <code class="docutils literal notranslate"><span class="pre">ioc
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#check-the-checkout-and-lifecycle-wiring">Check the checkout and lifecycle wiring</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#open-the-checkout-in-vs-code">Open the checkout in VS Code</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#edit-and-run-normally">Edit and run normally</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#launch-under-the-debugger">Launch under the debugger</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attach-to-the-running-process">Attach to the running process</a></li>

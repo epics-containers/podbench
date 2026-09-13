@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Debug a running application with attach &#8212; podbench 0.20.1.dev10+gf7e347d0b documentation</title>
+    <title>Debug a running application with attach &#8212; podbench 0.20.1.dev15+gb5ab64adc documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=b05cd48e"></script>
+    <script src="../_static/documentation_options.js?v=e3e704f1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -490,7 +490,7 @@
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Attaching a debugger depends on the host’s ptrace policy. This workflow worked on
-DLS RHEL 8 servers with <code class="docutils literal notranslate"><span class="pre">ptrace_scope=0</span></code>; newer DLS RHEL 9 servers use a more
+DLS RHEL 7 servers with <code class="docutils literal notranslate"><span class="pre">ptrace_scope=0</span></code>; DLS servers running RHEL 8 or above use a more
 restrictive setting, which can prevent debugger attachment even when the seat
 connects successfully.</p>
 <p>Hotfix can work around this by making the application opt into debugging when it
@@ -565,14 +565,16 @@ Debug</strong>.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
 <p>Select the launcher named <strong><code class="docutils literal notranslate"><span class="pre">Podbench:</span> <span class="pre">Attach</span> <span class="pre">—</span> <span class="pre">…</span></code></strong> for the IOC executable.
-<strong>Launchers supplied by the target repository will not work.</strong> Podbench’s
-launchers resolve the current process and supply filesystem mappings and debugger setup needed
-for this seat. Check the <code class="docutils literal notranslate"><span class="pre">Podbench</span></code> prefix before pressing F5.</p>
+Use the generated Podbench launcher: it resolves the current process and supplies
+the filesystem mappings and debugger setup needed for this seat. Check the
+<code class="docutils literal notranslate"><span class="pre">Podbench</span></code> prefix before pressing F5.</p>
 </div>
 <p>Start that launcher, pause briefly, and inspect <strong>Call Stack</strong>, <strong>Threads</strong> and
 <strong>Variables</strong>. Resume with F5; use <strong>Stop Debugging</strong> to disconnect when done.
 After an application restart, start the same Attach configuration again; it
-resolves the replacement process without regenerating the workspace.</p>
+resolves the replacement process without regenerating the workspace.
+If Kubernetes replaces the pod, rerun <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">ide</span> <span class="pre">vscode</span></code> from your workstation
+to connect to a seat in the replacement pod.</p>
 <p>By default, IDE launch adds 4 CPU / 8 GiB of limit headroom and 2 CPU / 4 GiB of
 requests to the live pod (Guaranteed pods reserve the full limit). It requires
 in-place resize support and permission. Reconnecting does not add it again.

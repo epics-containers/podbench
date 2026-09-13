@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Explanations &#8212; podbench 0.20.1.dev10+gf7e347d0b documentation</title>
+    <title>Explanations &#8212; podbench 0.20.1.dev15+gb5ab64adc documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="_static/documentation_options.js?v=b05cd48e"></script>
+    <script src="_static/documentation_options.js?v=e3e704f1"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -59,7 +59,7 @@
     <link rel="icon" href="_static/dls-logo.svg"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Reference" href="reference.html" />
+    <link rel="next" title="Attach and hotfix" href="explanations/attach-and-hotfix.html" />
     <link rel="prev" title="Build and publish the docs" href="how-to/build-docs.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -421,7 +421,11 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"></div>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="explanations/attach-and-hotfix.html">Attach and hotfix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="explanations/architecture.html">Architecture overview</a></li>
+</ul>
+</div>
 </nav></div>
     </div>
   
@@ -479,61 +483,12 @@
                   
   <section id="explanations">
 <h1>Explanations<a class="headerlink" href="#explanations" title="Link to this heading">#</a></h1>
-<section id="attach-and-hotfix">
-<h2>Attach and hotfix<a class="headerlink" href="#attach-and-hotfix" title="Link to this heading">#</a></h2>
-<p>Podbench is a prototype for rapid iteration on running Kubernetes applications.</p>
-<p>A <strong>seat</strong> is an ephemeral container in the application pod. It carries the tools
-needed to inspect another container’s processes and serves SSH over <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">exec</span></code>. Attach uses the target container’s reported UID, GID and seccomp profile;
-it does not guarantee ptrace access for every workload.</p>
-<div class="pst-scrollable-table-container"><table class="table">
-<thead>
-<tr class="row-odd"><th class="head"><p></p></th>
-<th class="head"><p>Attach</p></th>
-<th class="head"><p>Hotfix</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>Purpose</p></td>
-<td><p>Inspect the running application</p></td>
-<td><p>Edit source and restart the application child</p></td>
-</tr>
-<tr class="row-odd"><td><p>Workload preparation</p></td>
-<td><p>Permission to add an ephemeral container and exec</p></td>
-<td><p>Chart wiring, a supervisor and one claim per single-replica workload</p></td>
-</tr>
-<tr class="row-even"><td><p>Source</p></td>
-<td><p>Target image filesystem, or an existing hotfix checkout</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">/podbench/app</span></code> on a persistent claim</p></td>
-</tr>
-<tr class="row-odd"><td><p>Lifetime</p></td>
-<td><p>Seat ends when the pod is replaced</p></td>
-<td><p>Checkout survives pod replacement until the claim is deleted</p></td>
-</tr>
-</tbody>
-</table>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="explanations/attach-and-hotfix.html">Attach and hotfix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="explanations/architecture.html">Architecture overview</a></li>
+</ul>
 </div>
-<p>Hotfix uses the same attach seat. Its supervisor restarts the child inside the
-application container; this keeps the checkout available and avoids an image
-build for each Python or startup-script change. Native code still needs a build.</p>
-<p>VS Code opens a generated workspace in the seat. Its <strong>Podbench</strong> launchers know
-the target process and its filesystem. Launchers from the application’s own
-repository assume a different environment and will not work here. Attach resolves
-the current process before each session; ordinary PID changes need no regeneration.
-With new hotfix wiring, Stop deliberately holds the application stopped, Start
-reruns its full startup command, and Launch runs only the captured invocation under
-the debugger. Opening VS Code does not stop the application. Ending Launch leaves
-it stopped; ending Attach leaves it running.</p>
-<p>Pausing a process affects its real clients. Hotfix wiring allows supported exec
-liveness probes to be held during debugging; readiness may still report the
-application unavailable. Python debugging injects debugpy into the process and
-requires a child restart to remove the injection. The generated Attach session
-releases its own probe hold on disconnect. Ordinary attach does
-not automatically protect an unprepared workload from its probes.</p>
-<p>IDE resource headroom is applied to the live controller-owned pod, leaving its
-workload template unchanged. It lasts until pod replacement, and repeated IDE
-connections do not repeatedly increase the budget. <code class="docutils literal notranslate"><span class="pre">--no-headroom</span></code> uses the
-existing allocation.</p>
-</section>
 </section>
 
 
@@ -556,11 +511,11 @@ existing allocation.</p>
       </div>
     </a>
     <a class="right-next"
-       href="reference.html"
+       href="explanations/attach-and-hotfix.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Reference</p>
+        <p class="prev-next-title">Attach and hotfix</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -574,18 +529,6 @@ existing allocation.</p>
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-
-  <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-2"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attach-and-hotfix">Attach and hotfix</a></li>
-</ul>
-  </nav></div>
 
   <div class="sidebar-secondary-item">
 

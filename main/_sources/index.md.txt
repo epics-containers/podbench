@@ -50,7 +50,7 @@ Explanations of how it works and why it works that way.
 Reference <reference>
 ```
 +++
-Technical reference material including APIs and release notes.
+Command reference and links to release notes.
 :::
 
 ::::

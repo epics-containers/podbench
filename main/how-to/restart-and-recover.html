@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Restart, recover and retire a hotfix &#8212; podbench 0.20.1.dev10+gf7e347d0b documentation</title>
+    <title>Restart, recover and retire a hotfix &#8212; podbench 0.20.1.dev15+gb5ab64adc documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=b05cd48e"></script>
+    <script src="../_static/documentation_options.js?v=e3e704f1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -507,8 +507,12 @@ podbench<span class="w"> </span>hotfix<span class="w"> </span>restart<span class
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">--reinstall</span></code> requires a running seat for that application container. It does not
 compile native IOC code. If the child needs longer than the default two-minute
-restart deadline, use <code class="docutils literal notranslate"><span class="pre">--deadline</span> <span class="pre">SECONDS</span></code> and check that its probes allow that
-startup time.</p>
+restart deadline, use the hotfix restart command with an explicit timeout:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>hotfix<span class="w"> </span>restart<span class="w"> </span>p47-blueapi-0<span class="w"> </span>--container<span class="w"> </span>blueapi<span class="w"> </span>--deadline<span class="w"> </span><span class="m">300</span>
+</pre></div>
+</div>
+<p>This allows five minutes. Check that the application’s probes allow that startup
+time too. The shorter <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">restart</span></code> command does not expose <code class="docutils literal notranslate"><span class="pre">--deadline</span></code>.</p>
 <p>Inside a configured seat, <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">stop</span></code>, <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">start</span></code> and <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">restart</span></code>
 infer the target without Kubernetes credentials. Workstation equivalents accept
 the pod plus <code class="docutils literal notranslate"><span class="pre">--container</span></code>, namespace and context options. Start/Stop are harmless
@@ -537,8 +541,8 @@ state and starts normally, while the checkout survives on its claim.</p>
 <section id="save-work-and-return-to-the-image">
 <h2>Save work and return to the image<a class="headerlink" href="#save-work-and-return-to-the-image" title="Link to this heading">#</a></h2>
 <p>In the seat, inspect <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">diff</span></code> and save your changes to the application’s normal
-source repository before retiring the claim. For Git over SSH, a new IDE session
-can forward your loaded local agent:</p>
+source repository before retiring the claim. If you need Git over SSH, run the
+following <strong>on your workstation</strong> to open an IDE session with agent forwarding:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh-add<span class="w"> </span>~/.ssh/id_ed25519
 podbench<span class="w"> </span>ide<span class="w"> </span>vscode<span class="w"> </span>p47-blueapi-0<span class="w"> </span>--forward-agent
 </pre></div>
