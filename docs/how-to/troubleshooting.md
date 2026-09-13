@@ -18,8 +18,9 @@ kubectl get pods
 | SSH Include missing | Run `podbench doctor --fix`. VS Code must use your normal `~/.ssh/config`. |
 | `Forbidden` | Use the verb and resource in the error to request access. `doctor --fix` cannot grant RBAC. |
 | IDE resize fails | The cluster needs in-place resize, `patch pods/resize`, `patch pods` and `list limitranges`, plus enough resources. Use `--no-headroom` only if the pod already has room. |
-| Debugger fails or starts another application | Choose **Podbench: Attach — …** or **Podbench: Launch — …** in Run and Debug. The target repository's launchers will not work. |
+| Debugger fails or starts another application | Choose the generated **Podbench: Attach — …** or **Podbench: Launch — …** entry in Run and Debug; it supplies the seat's filesystem mappings and debugger setup. |
 | Process exited / PID changed | Retry the same Attach configuration; it resolves the current process. If there is no match, Start the application. If ambiguous, identify the duplicate invocation. |
+| Pod replaced | Rerun `podbench ide vscode POD` from your workstation to connect to a seat in the replacement pod. Retrying Attach in the old workspace is not enough. |
 | Python breakpoint is unbound | Check the selected server invocation and source path. Use `/podbench/app` for hotfix source, or the target filesystem shown in the generated workspace for image source. |
 | GDB shows addresses without source | Use matching debug symbols and source. An IOC developer image helps; a runtime image may have stripped them. |
 | `ptrace: Operation not permitted` | Check target UID, seccomp and Yama policy. Attach cannot bypass them; hotfix initialization supplies a debugging shim for dynamically linked application processes after restart. |

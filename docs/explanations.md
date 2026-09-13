@@ -1,8 +1,14 @@
 # Explanations
 
+```{toctree}
+:maxdepth: 1
+
+explanations/architecture
+```
+
 ## Attach and hotfix
 
-Podbench is a prototype for rapid iteration on running Kubernetes applications.
+Podbench lets you edit and debug running Kubernetes applications.
 
 A **seat** is an ephemeral container in the application pod. It carries the tools
 needed to inspect another container's processes and serves SSH over `kubectl
@@ -21,8 +27,8 @@ application container; this keeps the checkout available and avoids an image
 build for each Python or startup-script change. Native code still needs a build.
 
 VS Code opens a generated workspace in the seat. Its **Podbench** launchers know
-the target process and its filesystem. Launchers from the application's own
-repository assume a different environment and will not work here. Attach resolves
+the target process and its filesystem. Use these generated launchers so the
+debugger has the setup and filesystem mappings needed for the seat. Attach resolves
 the current process before each session; ordinary PID changes need no regeneration.
 With new hotfix wiring, Stop deliberately holds the application stopped, Start
 reruns its full startup command, and Launch runs only the captured invocation under

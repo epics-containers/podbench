@@ -17,6 +17,17 @@ Follow the local URL printed by the command. Edit Markdown pages in `docs/` and
 add them to the appropriate table of contents. Keep tutorials focused on a
 complete task and put optional operations in how-to guides.
 
+If the preview reports `address already in use`, another server is using its
+port. Stop the previous preview with Ctrl+C in its terminal, or choose another
+port:
+
+```bash
+uv run --locked tox -e docs-autobuild -- --port 8001
+```
+
+This error concerns the preview server; the preceding Sphinx build may have
+completed successfully.
+
 The project uses the Diamond Light Source Python Copier template, pinned in
 `.copier-answers.yml` with `docs_type: sphinx`. The Sphinx conversion was generated
 with:

@@ -12,11 +12,18 @@ pod, container and application source as appropriate.
 podbench status
 ```
 
-An `initialized, normal` workload is ready to use. `legacy wiring` requires
-regenerated supervisor wiring and a rollout, even when the claim is initialized.
-Do not re-run init on that claim. A workload marked `ready for init`
-needs only the initialization step below. Check the current state before making
-changes, even if the workload has been used for hotfix before.
+Read both parts of the `HOTFIX` column: the checkout state and the supervisor
+state. For example:
+
+| HOTFIX | Next step |
+| --- | --- |
+| `initialized, normal` | Already prepared; continue with the hotfix tutorial. |
+| `ready for init, normal` | Wiring is in place; initialize the empty claim below. |
+| `initialized, legacy wiring` | Update the wiring and roll out the pod; keep the existing checkout. |
+| `ready for init, legacy wiring` | Update the wiring and roll out the pod, then initialize the empty claim. |
+
+`ready for init` alone does not confirm that the supervisor is current. Check
+the full state even if the workload has been used for hotfix before.
 
 ## Generate and deploy the chart changes
 
@@ -52,6 +59,10 @@ podbench status
 The claim survives; the old seats are replaced. Use the actual controller name
 and kind for another workload. `hotfix enable` reporting `unchanged` means the
 local files already match; it does not confirm that the running pod uses them.
+
+After the rollout, an empty claim should show `ready for init, normal`. An
+existing initialized claim should show `initialized, normal`; skip initialization
+for that claim.
 
 Stop and Launch require hold-aware exec liveness probes or no liveness probe.
 Extending an HTTP/TCP/gRPC failure threshold cannot protect an indefinite stop.
@@ -104,5 +115,9 @@ Non-Python repositories are cloned without a build step. Init refuses to replace
 files on a non-empty claim, including a partially initialized one. Inspect and
 back up any contents before deciding how to recover; never clear a shared
 checkout merely to repeat the tutorial.
+
+Run `podbench status` again after initialization. The checkout state should have
+changed from `ready for init` to `initialized`, giving `initialized, normal` when
+the application is running normally.
 
 Now follow [edit and debug an application](../tutorials/hotfix.md).
