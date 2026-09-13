@@ -20,6 +20,7 @@ HEADROOM = {
 
 
 def quantity(value: str) -> Fraction:
+    """Parse a Kubernetes resource quantity exactly, in cores or bytes."""
     match = re.fullmatch(
         r"([+-]?(?:\d+(?:\.\d*)?|\.\d+))([a-zA-Z]*|[eE][+-]?\d+)", str(value)
     )
@@ -53,6 +54,7 @@ def _format(value: Fraction, resource: str) -> str:
 
 
 def ensure_headroom(kube: Kubectl, name: str, target: str, timeout: float) -> None:
+    """Reserve editor resources on this pod and wait for the node to allocate them."""
     pod = kube.get_pod(name)
     meta, spec = as_dict(pod.get("metadata")), as_dict(pod.get("spec"))
     owners = meta.get("ownerReferences", [])
@@ -95,6 +97,7 @@ def ensure_headroom(kube: Kubectl, name: str, target: str, timeout: float) -> No
     except (ValueError, TypeError) as error:
         raise KubectlError(f"invalid {BASELINE} annotation") from error
     if target not in baselines:
+        # Persist the original budget so reconnects do not add headroom repeatedly.
         baselines[target] = current
         kube.run(
             "patch",
@@ -126,6 +129,7 @@ def ensure_headroom(kube: Kubectl, name: str, target: str, timeout: float) -> No
             )
             desired[kind][resource] = _format(value, resource)
         if qos == "Guaranteed":
+            # Equal requests and limits preserve the pod's existing QoS class.
             desired["requests"][resource] = desired["limits"][resource]
     ranges = json.loads(kube.run("get", "limitrange", "-o", "json").stdout)
     for item in ranges.get("items", []):
@@ -164,6 +168,7 @@ def ensure_headroom(kube: Kubectl, name: str, target: str, timeout: float) -> No
                 }
             ),
         )
+    # An accepted spec patch does not mean the node has allocated the resources.
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         live = kube.get_pod(name)

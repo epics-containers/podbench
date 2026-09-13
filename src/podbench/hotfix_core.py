@@ -20,6 +20,8 @@ class HotfixError(RuntimeError):
 
 @dataclass(frozen=True)
 class Target:
+    """Application container, its running image provenance and optional hotfix PVC."""
+
     pod: PodRef
     container: str
     image: str
@@ -60,6 +62,7 @@ def claim_name(pod: Mapping[str, Any]) -> str | None:
 
 
 def _replicas(kube: Kubectl, pod: Mapping[str, Any]) -> int | None:
+    """Follow controller ownership to the desired replica count, or return unknown."""
     owners = _items(as_dict(pod.get("metadata")).get("ownerReferences"))
     owner = next((item for item in owners if item.get("controller") is True), None)
     if not owner:
@@ -92,6 +95,7 @@ def resolve_target(
     *,
     require_wiring: bool = True,
 ) -> tuple[Target, dict[str, Any]]:
+    """Resolve a single-replica workload and, by default, require its hotfix mount."""
     name = pod_name.removeprefix("pod/")
     pod = kube.get_pod(name)
     chosen = target_container_name(pod, container)

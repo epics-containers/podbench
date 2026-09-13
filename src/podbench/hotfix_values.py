@@ -47,6 +47,7 @@ def claim_for(app: str) -> str:
 
 
 def entrypoint(container: Mapping[str, Any]) -> str:
+    """Quote the pod's explicit command and args; image-only entrypoints need input."""
     command = container.get("command")
     if not isinstance(command, list) or not command:
         raise HotfixError(
@@ -61,6 +62,8 @@ def entrypoint(container: Mapping[str, Any]) -> str:
 
 
 def supervisor() -> str:
+    """Build a shell loop that relaunches its child only while a hold file exists."""
+    # setsid gives each child its own process group for restart to terminate.
     return "\n".join(
         [
             "while :; do",
@@ -107,6 +110,7 @@ def value_blocks(
     gid: int | None = None,
     size: str = "10Gi",
 ) -> tuple[list[str], list[str]]:
+    """Return separate YAML lines for the claim dependency and workload settings."""
     chosen = target_container_name(pod, container_name)
     container = find_container(pod, chosen)
     command = command or entrypoint(container)

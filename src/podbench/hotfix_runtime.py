@@ -52,6 +52,8 @@ def _seat_run(
 
 
 def _sync_python() -> str:
+    # Keep the interpreter and environment on the claim so the application
+    # container can use them even though installation runs inside the seat.
     return (
         f"UV_PYTHON_INSTALL_DIR={HOTFIX_APP_PATH}/.python "
         f"UV_CACHE_DIR={HOTFIX_APP_PATH}/.uv-cache "
@@ -68,6 +70,7 @@ def init(
     ref: str | None = None,
     container: str | None = None,
 ) -> list[str]:
+    """Clone into an empty claim and record provenance after setup succeeds."""
     target, pod = resolve_target(kube, pod_name, container)
     if not target.claim:
         raise HotfixError("the podbench volume does not name a PVC")
@@ -151,6 +154,10 @@ def restart(
     reinstall: bool = False,
     deadline: int = 120,
 ) -> list[str]:
+    """Restart the supervised child and wait for a new PID and any exec health probe.
+
+    Dependency installation, when requested, runs in an existing matching seat.
+    """
     if deadline < 1:
         raise HotfixError("restart deadline must be at least one second")
     target, pod = resolve_target(kube, pod_name, container)

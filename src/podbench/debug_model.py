@@ -16,6 +16,7 @@ class Process:
 
 
 def read_process(path: Path) -> Process | None:
+    """Read one /proc/PID entry, tolerating exits and unreadable processes."""
     try:
         fields = {
             key: value.strip()
@@ -43,10 +44,13 @@ def read_process(path: Path) -> Process | None:
 
 
 def process_start(pid: int) -> str:
+    """Return kernel start ticks to distinguish a process from a reused PID."""
+    # The parenthesized command can contain spaces and ')'; fields follow its end.
     return Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[19]
 
 
 def listener(port: int) -> str:
+    """Return a listening TCP socket's inode in this network namespace, or empty."""
     for table in ("tcp", "tcp6"):
         try:
             rows = Path(f"/proc/net/{table}").read_text().splitlines()[1:]

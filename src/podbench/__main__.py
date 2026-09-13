@@ -17,6 +17,8 @@ _Tail = Annotated[list[str] | None, typer.Argument(metavar="[ARGS]...")]
 def _forward(
     handler: Callable[[Sequence[str]], int], verb: str
 ) -> Callable[[list[str] | None], None]:
+    """Pass arguments through so each subcommand owns its option parsing and help."""
+
     def command(args: _Tail = None) -> None:
         raise typer.Exit(handler([verb, *(args or [])]))
 

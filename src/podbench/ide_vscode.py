@@ -72,6 +72,7 @@ def open_vscode(
     no_headroom: bool = False,
     forward_agent: bool = False,
 ) -> None:
+    """Prepare resources, SSH and remote extensions, then open the debug workspace."""
     for binary in (code, "ssh", "git", *(("ssh-add",) if forward_agent else ())):
         if shutil.which(binary) is None:
             raise KubectlError(f"{binary} is required on the workstation")

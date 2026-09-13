@@ -115,6 +115,7 @@ def _dependency(chart: str) -> tuple[str, bool]:
 
 
 def _mapping_bounds(lines: list[str], key: str) -> tuple[int, int]:
+    """Find a top-level block's start and exclusive end, or EOF when absent."""
     start = next(
         (
             i
@@ -137,6 +138,7 @@ def _mapping_bounds(lines: list[str], key: str) -> tuple[int, int]:
 def _values(
     current: str, claim: list[str], workload: list[str], prefix: str | None
 ) -> tuple[str, bool]:
+    """Insert hotfix blocks while preserving surrounding text and refusing conflicts."""
     if re.search(r"(?m)^podbench-hotfix-claim:\s*$", current):
         return current, False
     lines = current.rstrip("\n").splitlines()
@@ -189,6 +191,7 @@ def enable(
     size: str = "10Gi",
     values_prefix: str | None = None,
 ) -> list[str]:
+    """Use live pod details to edit local chart wiring for review and deployment."""
     service = service.resolve()
     values_path = service / "values.yaml"
     chart_link = service / "Chart.yaml"
@@ -221,6 +224,7 @@ def enable(
             gid=gid,
             size=size,
         )
+    # Service charts may share Chart.yaml through a symlink; edit its referent.
     chart_path = chart_link.resolve(strict=True)
     new_chart, chart_changed = _dependency(chart_path.read_text())
     new_values, values_changed = _values(current_values, claim, workload, prefix)

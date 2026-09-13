@@ -12,6 +12,7 @@ from .gdb_support import thread_db_arguments
 
 
 def run(pid: int, start: str, arguments: list[str]) -> int:
+    """Run GDB for the recorded process lifetime, releasing only our own probe hold."""
     if process_start(pid) != start:
         raise RuntimeError("process restarted; rerun podbench ide vscode")
     root = Path(f"/proc/{pid}/root")

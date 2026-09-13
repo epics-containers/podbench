@@ -43,6 +43,7 @@ def hotfix_containers(pod: dict) -> list[str]:
 
 
 def hotfix_state(kube: Kubectl, pod: dict, container: str) -> tuple[str, bool]:
+    """Return a state label and whether inspection succeeded with no probe hold."""
     name = as_dict(pod.get("metadata")).get("name")
     if not isinstance(name, str):
         return "unreachable", False
@@ -94,6 +95,7 @@ def _mounting_pods(kube: Kubectl, claim: str) -> list[str]:
 def retire(
     kube: Kubectl, target_or_claim: str, *, delete_claim: bool = False
 ) -> tuple[list[str], bool]:
+    """Retire an unmounted claim; return messages and whether retirement is complete."""
     pod_name = target_or_claim.removeprefix("pod/")
     probe = (
         None

@@ -55,6 +55,7 @@ def _directive(raw: str) -> tuple[str | None, list[str]]:
 
 
 def include_state(text: str, wanted_line: str) -> IncludeState:
+    """Classify the Include as global, after a Host/Match block, or absent."""
     _, wanted_arguments = _directive(wanted_line)
     wanted = {os.path.expanduser(value) for value in wanted_arguments}
     conditional = False

@@ -31,12 +31,18 @@ def _debugpy_source() -> Path | None:
 
 
 def inject(pid: int, start: str, port: int, state_dir: Path | None = None) -> None:
+    """Inject debugpy into the recorded process, or reuse its known listener.
+
+    Successful injection keeps supervised probes held until a hotfix restart.
+    Failed injection removes only a hold created by this call.
+    """
     proc = Path(f"/proc/{pid}")
     if process_start(pid) != start:
         raise RuntimeError("process restarted; rerun podbench ide vscode")
     state = (state_dir or Path.home() / ".podbench/ide") / f"python-{pid}.json"
     state.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     if inode := listener(port):
+        # A port alone is insufficient: another process may now own the listener.
         old = json.loads(state.read_text()) if state.exists() else {}
         if old == {"start": start, "port": port, "inode": inode}:
             return
@@ -64,6 +70,7 @@ def inject(pid: int, start: str, port: int, state_dir: Path | None = None) -> No
     gdb = tools / "gdb"
     program = tools / "executable"
     temporary = tools / "executable.new"
+    # Copy the target binary because GDB resolves /proc/PID/exe in the seat.
     shutil.copyfile(proc / "exe", temporary)
     temporary.replace(program)
     gdb.write_text(
