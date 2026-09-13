@@ -30,12 +30,31 @@ HTTP, TCP, and gRPC probes cannot observe the hotfix hold file and remain active
 during restart. Generated values extend their failure threshold over the
 two-minute restart window; confirm the deployed values retained that extension.
 The restart sends TERM, then escalates to KILL after a bounded grace period so a
-slow child cannot make the supervisor exit. Exec probes use the generated
-hold-aware wrapper. In both cases, require the child PID to change without an
+slow child cannot make the supervisor exit. Exec liveness probes use the generated
+hold-aware wrapper; BlueAPI readiness must still check application health while
+held. In both cases, require the child PID to change without an
 application-container restart.
 
-On an RWX/NFS claim, validate initialization with a real repository. A failed
-initialization must be retryable, and Git operations must accept the fsGroup-owned
+On an RWX/NFS claim, validate initialization with a real repository. Fresh claims
+may contain `lost+found`, which must survive. Retry after an incomplete init must
+refuse to overwrite existing work; inspect and back up the contents before
+explicitly clearing and retrying. Git operations must accept the fsGroup-owned
 mount root without weakening the claim permissions.
+
+For multi-container pods, use `--container` consistently for `init`, `restart`, and
+`restart --reinstall`, and confirm the seat belongs to that target. Status should report all hotfix
+containers and distinguish an unreachable container from an uninitialized claim.
+Retirement must reject every consumer of the PVC, regardless of volume name, and
+propagate API/permission failures rather than interpreting them as absence.
+
+For Python debugging, initialize the durable venv, leave BlueAPI
+`debug.enabled: false`, and inject explicitly with `podbench debug --python PID`.
+The injector must use the target UID/GID and shared Podbench storage for temporary
+files. Port-forward pod port 5678 and verify a real DAP breakpoint. Disconnecting
+DAP leaves the adapter and hold active: run `podbench hotfix restart POD` and
+verify the listener and hold disappear without a container restart. Liveness
+may remain held at a breakpoint; readiness must not report an unresponsive app
+as healthy. Reinstall still updates the live environment before child restart;
+do not describe it as atomic or claim local process checks prove probe budgets.
 
 For cleanup, restore the original Deployment template and wait for the old wired pod to finish terminating before retiring the claim. A rollout can report success while the terminating old pod still mounts the PVC, and an unfiltered pod selector may return that old pod. Verify the replacement pod's owner, response, readiness, and restart count, then retire/delete the unmounted claim and confirm no hotfix resources remain.
