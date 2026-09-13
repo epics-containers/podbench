@@ -34,7 +34,7 @@ first. Run Podbench on the same workstation as your VS Code CLI.
 ## Install Podbench and check SSH
 
 ```bash
-uv tool install git+https://github.com/epics-containers/podbench@main
+uv tool install podbench
 podbench --help
 ```
 
