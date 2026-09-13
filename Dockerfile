@@ -107,7 +107,7 @@ ENV DEBUGINFOD_URLS=https://debuginfod.debian.net
 ENV DEBUGINFOD_TIMEOUT=2
 
 # Use the standalone uv binary and reuse its managed Python installation.
-COPY --from=ghcr.io/astral-sh/uv:0.12.5 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.12.13 /uv /usr/local/bin/uv
 
 COPY --from=build /python /python
 ENV UV_PYTHON_INSTALL_DIR=/python
