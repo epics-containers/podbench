@@ -24,6 +24,7 @@ your own pod name when following the workflow on another beamline or cluster.
 On your workstation:
 
 ```bash
+module load ec/p47
 podbench attach bl47p-mo-ioc-01-0
 ```
 
