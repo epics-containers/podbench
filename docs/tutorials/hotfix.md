@@ -1,7 +1,7 @@
 # Edit and debug BlueAPI with hotfix
 
 Make a small, reversible change to P47 BlueAPI, restart it from its persistent
-checkout, and inspect that change in VS Code. Complete [setup](installation.md)
+checkout, and inspect that change in VS Code. Complete [setup](setup.md)
 and arrange a restart window with the P47 team first.
 
 ## Check the hotfix checkout

@@ -1,23 +1,22 @@
-# Set up for P47
+# Setup
 
 By the end you will have the Podbench CLI, a working Kubernetes context, and SSH
-configured for a debugging seat.
+configured for a debugging seat. We use P47 as an example; substitute your own
+beamline or cluster where appropriate.
 
 ## Load the DLS environment
 
-On a DLS workstation with environment modules:
+On a DLS workstation, load the modules for your beamline and uv. For example,
+for P47:
 
 ```bash
 module load ec/p47
 module load uv
-kubectl config current-context
-kubectl config view --minify -o jsonpath='{.contexts[0].context.namespace}{"\n"}'
 kubectl get pods
 ```
 
-The namespace should be `p47-beamline`. **The `ec/p47` module sets the default
-namespace**, so the commands in these guides do not need `--namespace` or `-n`.
-Check the context before starting each session.
+**The beamline module sets the default namespace** (`p47-beamline` in this
+example), so the commands in these guides do not need `--namespace` or `-n`.
 
 :::{admonition} Outside DLS
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and
@@ -57,7 +56,10 @@ For the graphical tutorials, install VS Code and its **Remote - SSH** extension,
 and check that `code --version` works. Podbench installs the remote Python and
 C/C++ debugging extensions when opening the seat.
 
-## Identify the examples
+## Choose an application
+
+Use `kubectl get pods` to choose an application in your namespace. The following
+tutorials use these P47 examples:
 
 ```bash
 kubectl get pod bl47p-mo-ioc-01-0 p47-blueapi-0
@@ -70,9 +72,9 @@ kubectl get pod bl47p-mo-ioc-01-0 p47-blueapi-0 \
 | PMAC IOC | `bl47p-mo-ioc-01-0` | `bl47p-mo-ioc-01` |
 | BlueAPI | `p47-blueapi-0` | `blueapi` |
 
-These names were checked on P47 in September 2026. If a name has changed, select
-its current replacement from `kubectl get pods`. Choose the BlueAPI application
-pod, not its separate OAuth2 proxy.
+For another beamline or cluster, use your own pod and container names. If a P47
+name has changed, select its current replacement from `kubectl get pods`. Choose
+the BlueAPI application pod, not its separate OAuth2 proxy.
 
 Continue with [attach](attach.md) or [hotfix](hotfix.md). Both operate on the live
 application: arrange a session with the beamline team before pausing or restarting it.

@@ -10,7 +10,7 @@ workstation unless a step says **in the seat**.
 ```{toctree}
 :maxdepth: 1
 
-tutorials/installation
+tutorials/setup
 tutorials/attach
 tutorials/hotfix
 ```

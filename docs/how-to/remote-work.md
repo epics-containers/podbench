@@ -40,7 +40,7 @@ Keep generated kubeconfigs private and out of Git.
 ## Start the tunnel on your laptop
 
 Install Podbench, kubectl and SSH locally as described in
-[setup](../tutorials/installation.md). In a local Podbench checkout, set the actual
+[setup](../tutorials/setup.md). In a local Podbench checkout, set the actual
 SSH host and **absolute path printed on the DLS host**. For example, replace
 `FEDID` and `DLS_HOST` in:
 

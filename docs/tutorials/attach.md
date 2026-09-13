@@ -2,7 +2,7 @@
 
 Inspect P47's PMAC IOC without replacing its application container. You will
 attach a seat, read an IOC backtrace, and open the same application in VS Code.
-Complete [setup](installation.md) first.
+Complete [setup](setup.md) first.
 
 ## Attach a seat
 
