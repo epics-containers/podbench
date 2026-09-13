@@ -42,6 +42,32 @@ Aliases pin the context and kubeconfig paths used at attach time.
 `--target` defaults to the pod's first container. Hotfix commands call the same
 option `--container`; use it consistently for pods with multiple containers.
 
+## VS Code
+
+    podbench ide vscode POD -n NAMESPACE [--target CONTAINER]
+
+Run on your workstation with `code`, `kubectl`, SSH and a loaded SSH agent.
+The command opens a normal Remote-SSH workspace, installs Python/C++ debug
+extensions in the seat, and generates an attach launcher for each readable
+application process. Hotfix code at `/podbench/app` is already in the workspace;
+generated files stay in the seat's home, outside your checkout. Rerun after an
+application restart to refresh PIDs. Python is injected only when you start its
+debug launcher; restart the hotfix child afterwards to remove the debugger.
+Normal ptrace/Yama restrictions still apply.
+
+The live pod gains **4 CPU / 8 GiB of limit headroom**, with **2 CPU / 4 GiB
+of additional requests** (Guaranteed pods reserve the full limit). Reconnecting
+does not repeatedly increase these values. This requires in-place resize support,
+`patch pods/resize`, `patch pods`, and `list limitranges`; launch waits for actual
+allocation and stops if the cluster cannot provide it. Only controller-owned
+pods are supported: Argo CD keeps reconciling the unchanged workload template,
+while the extra budget lasts until the pod is replaced. No Argo settings change.
+
+Your SSH agent is forwarded and Git name/email are copied to the seat; private
+keys and credential helpers stay local. Use an SSH Git remote to push. Forwarding
+lasts while the SSH connection is alive. The command installs Podbench's SSH
+Include if needed; VS Code must use your normal `~/.ssh/config`.
+
 ## Hotfix lifecycle
 
 1. Enable hotfix wiring in an epics-containers service chart, then review and
