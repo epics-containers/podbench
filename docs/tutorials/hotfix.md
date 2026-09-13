@@ -67,7 +67,9 @@ curl -fsS http://127.0.0.1:8000/healthz
 ```
 
 This only calls the health endpoint; it does not run a plan or move hardware.
-Changes to Python dependencies also need `--reinstall`; see
+The checkout is installed in editable mode, so Python source edits need only a
+restart. If you change dependency declarations in `pyproject.toml` or versions
+in `uv.lock`, add `--reinstall` to sync the environment before restarting; see
 [restart and recover](../how-to/restart-and-recover.md).
 
 ## Debug the edited code

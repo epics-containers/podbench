@@ -11,8 +11,10 @@ On your workstation:
 podbench hotfix restart p47-blueapi-0 --container blueapi
 ```
 
-For changes to `pyproject.toml` or `uv.lock`, attach a seat to the same container
-and reinstall the Python environment before restarting:
+The checkout is installed in editable mode by `uv sync`; ordinary Python source
+edits do not need reinstalling. If you change dependency declarations in
+`pyproject.toml` or versions in `uv.lock`, use `--reinstall` to rerun `uv sync`
+before restarting. This requires a seat attached to the same container:
 
 ```bash
 podbench attach p47-blueapi-0
