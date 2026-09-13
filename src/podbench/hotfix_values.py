@@ -11,12 +11,12 @@ from typing import Any
 from . import __version__
 from .hotfix_core import HotfixError, find_container
 from .launcher import target_container_name, target_uid_gid
+from .lifecycle_health import health_command
+from .lifecycle_supervisor import supervisor
 from .model import (
     HOTFIX_APP_PATH,
-    HOTFIX_CHILD_PID_PATH,
     HOTFIX_CLAIM_VOLUME,
     HOTFIX_HOLD_PATH,
-    HOTFIX_PTRACE_PATH,
     as_dict,
 )
 
@@ -59,27 +59,6 @@ def entrypoint(container: Mapping[str, Any]) -> str:
     if isinstance(args, list):
         words.extend(str(word) for word in args)
     return shlex.join(words)
-
-
-def supervisor() -> str:
-    """Build a shell loop that relaunches its child only while a hold file exists."""
-    # setsid gives each child its own process group for restart to terminate.
-    return "\n".join(
-        [
-            "while :; do",
-            f"  [ ! -x {HOTFIX_APP_PATH}/.venv/bin/python ] || "
-            f'export PATH="{HOTFIX_APP_PATH}/.venv/bin:$PATH"',
-            f"  [ ! -f {HOTFIX_PTRACE_PATH} ] || "
-            f"export LD_PRELOAD={HOTFIX_PTRACE_PATH}",
-            '  setsid bash -c "$1" &',
-            "  child=$!",
-            f"  echo $child > {HOTFIX_CHILD_PID_PATH}",
-            "  wait $child; rc=$?",
-            '  kill -TERM -"$child" 2>/dev/null || true',
-            f"  [ -e {HOTFIX_HOLD_PATH} ] || exit $rc",
-            "done",
-        ]
-    )
 
 
 def yaml_scalar(value: str) -> str:
@@ -130,6 +109,9 @@ def value_blocks(
         if "\n" in launch
         else [f"  - {yaml_scalar(launch)}"]
     )
+    live_probe = container.get("livenessProbe", {})
+    health = health_command(container)
+    safe = not live_probe or _liveness(container) is not None
     workload = [
         "volumes:",
         f"  - name: {HOTFIX_CLAIM_VOLUME}",
@@ -141,7 +123,7 @@ def value_blocks(
         "command: [bash, -c]",
         "args:",
         "  - |",
-        *[f"    {line}" for line in supervisor().splitlines()],
+        *[f"    {line}" for line in supervisor(health=health, safe=safe).splitlines()],
         "  - podbench-supervisor",
         *launch_lines,
     ]

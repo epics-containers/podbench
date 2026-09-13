@@ -11,7 +11,6 @@ from .hotfix_core import (
     HotfixError,
     Target,
     exec_target,
-    find_container,
     load_json,
     resolve_target,
 )
@@ -20,7 +19,6 @@ from .launcher import attach, running_seat
 from .model import (
     HOTFIX_APP_PATH,
     HOTFIX_CHILD_PID_PATH,
-    HOTFIX_HOLD_PATH,
     HOTFIX_PTRACE_PATH,
 )
 
@@ -177,63 +175,6 @@ def restart(
                 f"-n {target.pod.namespace} first"
             )
         _seat_run(kube, target, seat.name, sync, timeout=600.0)
-    before = exec_target(kube, target, f"cat {HOTFIX_CHILD_PID_PATH}").stdout.strip()
-    spec = find_container(pod, target.container)
-    probe = spec.get("readinessProbe") or spec.get("livenessProbe") or {}
-    command = probe.get("exec", {}).get("command", [])
-    # Run the real probe without its generated hold shortcut. Keep Kubernetes
-    # probes held until startup completes, not merely until a new PID exists.
-    health = (
-        shlex.join(
-            ["timeout", str(probe.get("timeoutSeconds", 1))]
-            + [
-                part.replace(HOTFIX_HOLD_PATH, "/proc/self/podbench-no-hold")
-                for part in command
-            ]
-        )
-        if command
-        else "true"
-    )
-    script = "\n".join(
-        [
-            "set -eu",
-            f"expires=$(( $(date +%s) + {deadline} ))",
-            f"echo $expires > {HOTFIX_HOLD_PATH}",
-            f"trap 'rm -f {HOTFIX_HOLD_PATH}' EXIT",
-            f"child=$(cat {HOTFIX_CHILD_PID_PATH})",
-            'kill -TERM -"$child" 2>/dev/null || kill -TERM "$child"',
-            f"kill_at=$(( $(date +%s) + {min(10, max(1, deadline // 2))} ))",
-            'while [ "$(date +%s)" -lt "$expires" ]; do',
-            f"  new=$(cat {HOTFIX_CHILD_PID_PATH} 2>/dev/null || true)",
-            '  if [ -n "$new" ] && [ "$new" != "$child" ]; then',
-            f"    if {health} >/dev/null 2>&1; then exit 0; fi",
-            '  elif [ "$(date +%s)" -ge "$kill_at" ]; then',
-            '    kill -KILL -"$child" 2>/dev/null || '
-            'kill -KILL "$child" 2>/dev/null || true',
-            "  fi",
-            "  sleep 0.1",
-            "done",
-            "exit 1",
-        ]
-    )
-    exec_target(kube, target, script, timeout=float(deadline + 10))
-    after = exec_target(kube, target, f"cat {HOTFIX_CHILD_PID_PATH}").stdout.strip()
-    seat = running_seat(kube.get_pod(target.pod.name), target=target.container)
-    state = "not measured"
-    if seat:
-        result = _seat_run(
-            kube,
-            target,
-            seat.name,
-            f"git -c safe.directory={HOTFIX_APP_PATH} "
-            f"-C {HOTFIX_APP_PATH} status --short",
-            check=False,
-        )
-        if result.returncode:
-            state = "unknown (git status failed)"
-        else:
-            state = "clean" if not result.stdout.strip() else "modified"
-    return [
-        f"restarted {target.container}: pid {before} -> {after}",
-        f"checkout is {state}",
-    ]
+    from .lifecycle import operate
+
+    return operate(kube, pod_name, "restart", container, deadline=deadline)

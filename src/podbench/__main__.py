@@ -61,6 +61,12 @@ def _ide(args: Sequence[str]) -> int:
     return main(args)
 
 
+def _lifecycle(args: Sequence[str]) -> int:
+    from .lifecycle import main
+
+    return main(args)
+
+
 def _build_app() -> typer.Typer:
     app = new_app()
 
@@ -122,6 +128,13 @@ def _build_app() -> typer.Typer:
         context_settings=settings,
         rich_help_panel="Seat commands",
     )(_forward(_debug, "debug"))
+    for verb in ("start", "stop", "restart"):
+        app.command(
+            name=verb,
+            help=f"{verb} the hotfix application",
+            add_help_option=False,
+            context_settings=settings,
+        )(_forward(_lifecycle, verb))
     return app
 
 

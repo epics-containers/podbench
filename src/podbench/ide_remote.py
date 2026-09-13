@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from .ide_launchers import launchers, write_json
+from .ide_process import bind
 
 EXCLUDES = {
     f"**/{name}/**": True
@@ -23,6 +24,8 @@ def prepare(identity: dict) -> dict:
         raise RuntimeError(f"SSH login home {home} is not writable")
     base = home / ".podbench/ide"
     base.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if namespace := identity.get("podbench.namespace"):
+        bind(base, namespace)
     bootstrap = base / "bootstrap"
     bootstrap.mkdir(exist_ok=True)
     for key, value in identity.items():
