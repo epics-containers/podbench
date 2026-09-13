@@ -36,6 +36,9 @@ jobs:
 
   docs:
     uses: ./.github/workflows/_docs.yml
+    concurrency:
+      group: docs-pages
+      cancel-in-progress: false
     permissions:
       contents: write
 
