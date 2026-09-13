@@ -87,7 +87,7 @@ def launchers(base: Path, folder: Path, home: Path) -> tuple[list, list, set, li
             task = f"podbench: prepare Python {pid}"
             configurations.append(
                 {
-                    "name": f"Python {label}",
+                    "name": f"Podbench Python {label}",
                     "type": "debugpy",
                     "request": "attach",
                     "connect": {"host": "127.0.0.1", "port": port},
@@ -159,7 +159,7 @@ def launchers(base: Path, folder: Path, home: Path) -> tuple[list, list, set, li
             commands = thread_db_arguments(pid)[1::2] + [f"set sysroot {root}"]
             configurations.append(
                 {
-                    "name": f"C/C++ {label}",
+                    "name": f"Podbench C/C++ {label}",
                     "type": "cppdbg",
                     "request": "attach",
                     "processId": str(pid),
