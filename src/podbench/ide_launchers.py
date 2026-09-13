@@ -161,8 +161,10 @@ def launchers(base: Path, folder: Path, home: Path) -> tuple[list, list, set, li
                 {
                     "name": f"Podbench C/C++ {label}",
                     "type": "cppdbg",
-                    "request": "attach",
-                    "processId": str(pid),
+                    # cppdbg prompts to elevate every Linux "attach" request.
+                    # Drive the same GDB attach through its customizable launch
+                    # path because the seat already has the intended identity.
+                    "request": "launch",
                     "program": str(program),
                     "MIMode": "gdb",
                     "targetArchitecture": {
@@ -177,6 +179,10 @@ def launchers(base: Path, folder: Path, home: Path) -> tuple[list, list, set, li
                     "setupCommands": [
                         {"text": text, "ignoreFailures": False} for text in commands
                     ],
+                    "customLaunchSetupCommands": [
+                        {"text": f"-target-attach {pid}", "ignoreFailures": False}
+                    ],
+                    "launchCompleteCommand": "None",
                 }
             )
             extensions.add("ms-vscode.cpptools")
