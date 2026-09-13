@@ -2,7 +2,7 @@
 
 :::{warning}
 Attaching a debugger depends on the host's ptrace policy. This workflow worked on
-DLS RHEL 8 servers with `ptrace_scope=0`; newer DLS RHEL 9 servers use a more
+DLS RHEL 7 servers with `ptrace_scope=0`; DLS servers running RHEL 8 or above use a more
 restrictive setting, which can prevent debugger attachment even when the seat
 connects successfully.
 
@@ -96,15 +96,17 @@ Debug**.
 
 :::{important}
 Select the launcher named **`Podbench: Attach — …`** for the IOC executable.
-**Launchers supplied by the target repository will not work.** Podbench's
-launchers resolve the current process and supply filesystem mappings and debugger setup needed
-for this seat. Check the `Podbench` prefix before pressing F5.
+Use the generated Podbench launcher: it resolves the current process and supplies
+the filesystem mappings and debugger setup needed for this seat. Check the
+`Podbench` prefix before pressing F5.
 :::
 
 Start that launcher, pause briefly, and inspect **Call Stack**, **Threads** and
 **Variables**. Resume with F5; use **Stop Debugging** to disconnect when done.
 After an application restart, start the same Attach configuration again; it
 resolves the replacement process without regenerating the workspace.
+If Kubernetes replaces the pod, rerun `podbench ide vscode` from your workstation
+to connect to a seat in the replacement pod.
 
 By default, IDE launch adds 4 CPU / 8 GiB of limit headroom and 2 CPU / 4 GiB of
 requests to the live pod (Guaranteed pods reserve the full limit). It requires

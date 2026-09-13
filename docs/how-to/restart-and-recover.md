@@ -23,8 +23,14 @@ podbench hotfix restart p47-blueapi-0 --container blueapi --reinstall
 
 `--reinstall` requires a running seat for that application container. It does not
 compile native IOC code. If the child needs longer than the default two-minute
-restart deadline, use `--deadline SECONDS` and check that its probes allow that
-startup time.
+restart deadline, use the hotfix restart command with an explicit timeout:
+
+```bash
+podbench hotfix restart p47-blueapi-0 --container blueapi --deadline 300
+```
+
+This allows five minutes. Check that the application's probes allow that startup
+time too. The shorter `podbench restart` command does not expose `--deadline`.
 
 Inside a configured seat, `podbench stop`, `podbench start` and `podbench restart`
 infer the target without Kubernetes credentials. Workstation equivalents accept
@@ -57,8 +63,8 @@ state and starts normally, while the checkout survives on its claim.
 ## Save work and return to the image
 
 In the seat, inspect `git diff` and save your changes to the application's normal
-source repository before retiring the claim. For Git over SSH, a new IDE session
-can forward your loaded local agent:
+source repository before retiring the claim. If you need Git over SSH, run the
+following **on your workstation** to open an IDE session with agent forwarding:
 
 ```bash
 ssh-add ~/.ssh/id_ed25519
