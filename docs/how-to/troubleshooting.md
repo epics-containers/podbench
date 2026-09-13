@@ -29,7 +29,7 @@ kubectl get pods
 ## Pick up a rebuilt seat image
 
 ```bash
-podbench attach p47-blueapi-0 --target blueapi --new
+podbench attach p47-blueapi-0 --new
 ```
 
 Attach normally reuses a running seat. `--new` lands another one using the current

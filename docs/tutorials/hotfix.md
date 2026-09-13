@@ -24,7 +24,7 @@ missing, or **HOTFIX** shows `—` or `ready for init`, follow
 [prepare a workload](../how-to/enable-hotfix.md) and return here.
 
 ```bash
-podbench ide vscode p47-blueapi-0 --target blueapi
+podbench ide vscode p47-blueapi-0
 ```
 
 The generated workspace includes `/podbench/app`, the persistent BlueAPI source
@@ -75,7 +75,7 @@ Changes to Python dependencies also need `--reinstall`; see
 Rerun on your workstation to refresh the process IDs:
 
 ```bash
-podbench ide vscode p47-blueapi-0 --target blueapi
+podbench ide vscode p47-blueapi-0
 ```
 
 Open **Run and Debug** in the generated workspace.

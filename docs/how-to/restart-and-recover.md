@@ -15,7 +15,7 @@ For changes to `pyproject.toml` or `uv.lock`, attach a seat to the same containe
 and reinstall the Python environment before restarting:
 
 ```bash
-podbench attach p47-blueapi-0 --target blueapi
+podbench attach p47-blueapi-0
 podbench hotfix restart p47-blueapi-0 --container blueapi --reinstall
 ```
 
@@ -24,7 +24,7 @@ compile native IOC code. If the child needs longer than the default two-minute
 restart deadline, use `--deadline SECONDS` and check that its probes allow that
 startup time.
 
-After restarting, rerun `podbench ide vscode p47-blueapi-0 --target blueapi` to
+After restarting, rerun `podbench ide vscode p47-blueapi-0` to
 refresh debug launchers. Always select a **Podbench** launcher.
 
 ## Recover after debugging or a failed restart
@@ -49,7 +49,7 @@ can forward your loaded local agent:
 
 ```bash
 ssh-add ~/.ssh/id_ed25519
-podbench ide vscode p47-blueapi-0 --target blueapi --forward-agent
+podbench ide vscode p47-blueapi-0 --forward-agent
 ```
 
 Git name and email are copied to the seat; private keys stay local. Any process

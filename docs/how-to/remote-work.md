@@ -54,7 +54,7 @@ REMOTE_KUBECONFIG='FEDID@DLS_HOST:/home/FEDID/podbench/k8s/p47-beamline-agent-FE
 export KUBECONFIG="$PWD/k8s/p47-tunnel.kubeconfig"
 kubectl get pods
 podbench doctor --fix
-podbench ide vscode p47-blueapi-0 --target blueapi --no-headroom
+podbench ide vscode p47-blueapi-0 --no-headroom
 ```
 
 The script reads the source over SSH and writes a local kubeconfig using a
