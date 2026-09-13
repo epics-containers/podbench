@@ -2,13 +2,13 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="./" >
+<html lang="en" data-content_root="../" >
 
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>How-to guides &#8212; podbench 0.20.1.dev5+g599241339 documentation</title>
+    <title>Prepare a workload for hotfix &#8212; podbench 0.20.1.dev5+g599241339 documentation</title>
   
   
   
@@ -27,27 +27,27 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
-    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="_static/documentation_options.js?v=dcb443c8"></script>
-    <script src="_static/doctools.js?v=fd6eb6e6"></script>
-    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
-    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
-    <script src="_static/copybutton.js?v=30646c52"></script>
-    <script src="_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to';</script>
+    <script src="../_static/documentation_options.js?v=dcb443c8"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/enable-hotfix';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://epics-containers.github.io/podbench/switcher.json';
@@ -56,19 +56,19 @@
             false;
         </script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
-    <link rel="icon" href="_static/dls-logo.svg"/>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Work remotely through an SSH tunnel" href="how-to/remote-work.html" />
-    <link rel="prev" title="Edit and debug an application with hotfix" href="tutorials/hotfix.html" />
+    <link rel="icon" href="../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Restart, recover and retire a hotfix" href="restart-and-recover.html" />
+    <link rel="prev" title="Work remotely through an SSH tunnel" href="remote-work.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
   
     
-    <script src="_static/searchtools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script src="searchindex.js"></script>
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
   
   </head>
   <body data-default-mode="">
@@ -88,7 +88,7 @@
   <dialog id="pst-search-dialog">
     
 <form class="bd-search d-flex align-items-center"
-      action="search.html"
+      action="../search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -124,7 +124,7 @@
     
   
 
-<a class="navbar-brand logo" href="index.html">
+<a class="navbar-brand logo" href="../index.html">
   
   
   
@@ -135,8 +135,8 @@
       
     
     
-    <img src="_static/dls-logo.svg" class="logo__image only-light" alt=""/>
-    <img src="_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
     <p class="title logo__title">podbench</p>
@@ -154,28 +154,28 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="tutorials.html">
+  <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
 </li>
 
 
 <li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
+  <a class="nav-link nav-internal" href="../how-to.html">
     How-to guides
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="explanations.html">
+  <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="reference.html">
+  <a class="nav-link nav-internal" href="../reference.html">
     Reference
   </a>
 </li>
@@ -307,28 +307,28 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="tutorials.html">
+  <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
 </li>
 
 
 <li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
+  <a class="nav-link nav-internal" href="../how-to.html">
     How-to guides
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="explanations.html">
+  <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="reference.html">
+  <a class="nav-link nav-internal" href="../reference.html">
     Reference
   </a>
 </li>
@@ -421,12 +421,12 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="how-to/remote-work.html">Work remotely through an SSH tunnel</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/enable-hotfix.html">Prepare a workload for hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/restart-and-recover.html">Restart, recover and retire a hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/troubleshooting.html">Troubleshoot a debugging session</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/build-docs.html">Build and publish the docs</a></li>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="remote-work.html">Work remotely through an SSH tunnel</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Prepare a workload for hotfix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="restart-and-recover.html">Restart, recover and retire a hotfix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshoot a debugging session</a></li>
+<li class="toctree-l1"><a class="reference internal" href="build-docs.html">Build and publish the docs</a></li>
 </ul>
 </div>
 </nav></div>
@@ -463,11 +463,14 @@
   <ul class="bd-breadcrumbs">
     
     <li class="breadcrumb-item breadcrumb-home">
-      <a href="index.html" class="nav-link" aria-label="Home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">How-to guides</span></li>
+    
+    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to guides</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Prepare a workload for hotfix</span></li>
   </ul>
 </nav>
 </div>
@@ -484,17 +487,98 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="how-to-guides">
-<h1>How-to guides<a class="headerlink" href="#how-to-guides" title="Link to this heading">#</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="how-to/remote-work.html">Work remotely through an SSH tunnel</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/enable-hotfix.html">Prepare a workload for hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/restart-and-recover.html">Restart, recover and retire a hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/troubleshooting.html">Troubleshoot a debugging session</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/build-docs.html">Build and publish the docs</a></li>
-</ul>
+  <section id="prepare-a-workload-for-hotfix">
+<h1>Prepare a workload for hotfix<a class="headerlink" href="#prepare-a-workload-for-hotfix" title="Link to this heading">#</a></h1>
+<p>Hotfix needs a single-replica workload, a persistent claim mounted at
+<code class="docutils literal notranslate"><span class="pre">/podbench/app</span></code>, and a supervisor that can restart the application child. Do this
+once, before following the <a class="reference internal" href="../tutorials/hotfix.html"><span class="std std-doc">hotfix tutorial</span></a>. The commands
+use BlueAPI and a PMAC IOC on P47 as examples; substitute your service repository,
+pod, container and application source as appropriate.</p>
+<section id="check-existing-wiring-first">
+<h2>Check existing wiring first<a class="headerlink" href="#check-existing-wiring-first" title="Link to this heading">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>status
+</pre></div>
 </div>
+<p>An <code class="docutils literal notranslate"><span class="pre">initialized,</span> <span class="pre">normal</span></code> workload is ready to use. <code class="docutils literal notranslate"><span class="pre">legacy</span> <span class="pre">wiring</span></code> requires
+regenerated supervisor wiring and a rollout, even when the claim is initialized.
+Do not re-run init on that claim. A workload marked <code class="docutils literal notranslate"><span class="pre">ready</span> <span class="pre">for</span> <span class="pre">init</span></code>
+needs only the initialization step below. Check the current state before making
+changes, even if the workload has been used for hotfix before.</p>
+</section>
+<section id="generate-and-deploy-the-chart-changes">
+<h2>Generate and deploy the chart changes<a class="headerlink" href="#generate-and-deploy-the-chart-changes" title="Link to this heading">#</a></h2>
+<p>Work in your service repository. For example, to prepare BlueAPI in
+<a class="reference external" href="https://github.com/epics-containers/p47-services">p47-services</a>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>module<span class="w"> </span>load<span class="w"> </span>ec/p47
+<span class="nb">cd</span><span class="w"> </span>p47-services
+podbench<span class="w"> </span>hotfix<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>services/p47-blueapi<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--from-pod<span class="w"> </span>p47-blueapi-0<span class="w"> </span>--container<span class="w"> </span>blueapi
+git<span class="w"> </span>diff
+</pre></div>
+</div>
+<p>The command edits the local service chart; it does not deploy it. It derives the
+live identity and entrypoint, adds the claim dependency and workload values, and
+writes the BlueAPI wrapper template. Review all generated files, including new
+ones shown by <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">status</span> <span class="pre">--short</span></code>, then deploy through the beamline’s normal
+review and GitOps process. Wait for the replacement pod to become ready before
+continuing. Keep the workload at one replica.</p>
+<p>A wrapper-only ConfigMap update may not trigger a rollout. BlueAPI mounts the
+wrapper through <code class="docutils literal notranslate"><span class="pre">subPath</span></code>, so the existing container retains its old file. If
+GitOps has deployed the new ConfigMap but status still says <code class="docutils literal notranslate"><span class="pre">legacy</span> <span class="pre">wiring</span></code>,
+arrange an interruption window and replace the pod through a rollout:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>statefulset/p47-blueapi
+kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>statefulset/p47-blueapi
+podbench<span class="w"> </span>status
+</pre></div>
+</div>
+<p>The claim survives; the old seats are replaced. Use the actual controller name
+and kind for another workload. <code class="docutils literal notranslate"><span class="pre">hotfix</span> <span class="pre">enable</span></code> reporting <code class="docutils literal notranslate"><span class="pre">unchanged</span></code> means the
+local files already match; it does not confirm that the running pod uses them.</p>
+<p>Stop and Launch require hold-aware exec liveness probes or no liveness probe.
+Extending an HTTP/TCP/gRPC failure threshold cannot protect an indefinite stop.
+Readiness remains active. Start checks configured health before releasing its
+hold; generic HTTP checks need <code class="docutils literal notranslate"><span class="pre">curl</span></code> and gRPC checks need <code class="docutils literal notranslate"><span class="pre">grpc_health_probe</span></code>
+in the application image.</p>
+<p>For an IOC the equivalent service directory is <code class="docutils literal notranslate"><span class="pre">services/bl47p-mo-ioc-01</span></code> and
+container <code class="docutils literal notranslate"><span class="pre">bl47p-mo-ioc-01</span></code>. Existing values such as <code class="docutils literal notranslate"><span class="pre">volumes</span></code> or <code class="docutils literal notranslate"><span class="pre">volumeMounts</span></code>
+can conflict with generated values. In that case, use <code class="docutils literal notranslate"><span class="pre">hotfix</span> <span class="pre">values</span></code> and merge
+the settings with the existing lists instead of replacing them.</p>
+<div class="admonition-other-charts-or-conflicting-values admonition">
+<p class="admonition-title">Other charts or conflicting values</p>
+<p>Print the wiring for manual integration:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>hotfix<span class="w"> </span>values<span class="w"> </span>--app<span class="w"> </span>YOUR_RELEASE<span class="w"> </span>--from-pod<span class="w"> </span>YOUR_POD<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--container<span class="w"> </span>YOUR_CONTAINER
+</pre></div>
+</div>
+<p>Use <code class="docutils literal notranslate"><span class="pre">--values-prefix</span> <span class="pre">KEY</span></code> for a wrapper chart’s workload settings; claim settings
+stay at the top level. Use <code class="docutils literal notranslate"><span class="pre">--entrypoint</span> <span class="pre">'COMMAND'</span></code> when the original command does
+not select code under <code class="docutils literal notranslate"><span class="pre">/podbench/app</span></code>. Review and deploy the dependency and values
+using your chart’s normal process.</p>
+</div>
+</section>
+<section id="initialize-an-empty-claim">
+<h2>Initialize an empty claim<a class="headerlink" href="#initialize-an-empty-claim" title="Link to this heading">#</a></h2>
+<p>For BlueAPI, choose a branch or tag compatible with the deployment’s configuration:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>hotfix<span class="w"> </span>init<span class="w"> </span>p47-blueapi-0<span class="w"> </span>--container<span class="w"> </span>blueapi<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--repo<span class="w"> </span>https://github.com/DiamondLightSource/blueapi.git<span class="w"> </span>--ref<span class="w"> </span><span class="m">1</span>.17.0
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">1.17.0</span></code> is the image version observed on P47, not a requirement for existing
+checkouts. Keep an already initialized checkout at its agreed revision.
+Initialization clones the repository, syncs Python projects with uv, adds debugpy,
+and records the source revision and base image. It does not restart the child;
+use <code class="docutils literal notranslate"><span class="pre">podbench</span> <span class="pre">restart</span> <span class="pre">POD</span></code> when ready to run the checkout.</p>
+<p>For a fresh PMAC IOC claim:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>hotfix<span class="w"> </span>init<span class="w"> </span>bl47p-mo-ioc-01-0<span class="w"> </span>--container<span class="w"> </span>bl47p-mo-ioc-01<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--repo<span class="w"> </span>https://github.com/epics-containers/ioc-pmac.git<span class="w"> </span>--ref<span class="w"> </span><span class="m">2026</span>.6.1
+</pre></div>
+</div>
+<p>Non-Python repositories are cloned without a build step. Init refuses to replace
+files on a non-empty claim, including a partially initialized one. Inspect and
+back up any contents before deciding how to recover; never clear a shared
+checkout merely to repeat the tutorial.</p>
+<p>Now follow <a class="reference internal" href="../tutorials/hotfix.html"><span class="std std-doc">edit and debug an application</span></a>.</p>
+</section>
 </section>
 
 
@@ -508,20 +592,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="tutorials/hotfix.html"
+       href="remote-work.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Edit and debug an application with hotfix</p>
+        <p class="prev-next-title">Work remotely through an SSH tunnel</p>
       </div>
     </a>
     <a class="right-next"
-       href="how-to/remote-work.html"
+       href="restart-and-recover.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Work remotely through an SSH tunnel</p>
+        <p class="prev-next-title">Restart, recover and retire a hotfix</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -537,10 +621,24 @@
 
 
   <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#check-existing-wiring-first">Check existing wiring first</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generate-and-deploy-the-chart-changes">Generate and deploy the chart changes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initialize-an-empty-claim">Initialize an empty claim</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/epics-containers/podbench/edit/main/docs/how-to.md">
+    <a href="https://github.com/epics-containers/podbench/edit/main/docs/how-to/enable-hotfix.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -555,7 +653,7 @@
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="_sources/how-to.md.txt">
+    <a href="../_sources/how-to/enable-hotfix.md.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
@@ -574,8 +672,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">

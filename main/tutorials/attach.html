@@ -2,13 +2,13 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="./" >
+<html lang="en" data-content_root="../" >
 
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>How-to guides &#8212; podbench 0.20.1.dev5+g599241339 documentation</title>
+    <title>Debug a running application with attach &#8212; podbench 0.20.1.dev5+g599241339 documentation</title>
   
   
   
@@ -27,27 +27,27 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
-    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="_static/documentation_options.js?v=dcb443c8"></script>
-    <script src="_static/doctools.js?v=fd6eb6e6"></script>
-    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
-    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
-    <script src="_static/copybutton.js?v=30646c52"></script>
-    <script src="_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to';</script>
+    <script src="../_static/documentation_options.js?v=dcb443c8"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/attach';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://epics-containers.github.io/podbench/switcher.json';
@@ -56,19 +56,19 @@
             false;
         </script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
-    <link rel="icon" href="_static/dls-logo.svg"/>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Work remotely through an SSH tunnel" href="how-to/remote-work.html" />
-    <link rel="prev" title="Edit and debug an application with hotfix" href="tutorials/hotfix.html" />
+    <link rel="icon" href="../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Edit and debug an application with hotfix" href="hotfix.html" />
+    <link rel="prev" title="Setup" href="setup.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
   
     
-    <script src="_static/searchtools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script src="searchindex.js"></script>
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
   
   </head>
   <body data-default-mode="">
@@ -88,7 +88,7 @@
   <dialog id="pst-search-dialog">
     
 <form class="bd-search d-flex align-items-center"
-      action="search.html"
+      action="../search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -124,7 +124,7 @@
     
   
 
-<a class="navbar-brand logo" href="index.html">
+<a class="navbar-brand logo" href="../index.html">
   
   
   
@@ -135,8 +135,8 @@
       
     
     
-    <img src="_static/dls-logo.svg" class="logo__image only-light" alt=""/>
-    <img src="_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
     <p class="title logo__title">podbench</p>
@@ -153,29 +153,29 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="tutorials.html">
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
 </li>
 
 
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../how-to.html">
     How-to guides
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="explanations.html">
+  <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="reference.html">
+  <a class="nav-link nav-internal" href="../reference.html">
     Reference
   </a>
 </li>
@@ -306,29 +306,29 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="tutorials.html">
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
 </li>
 
 
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../how-to.html">
     How-to guides
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="explanations.html">
+  <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="reference.html">
+  <a class="nav-link nav-internal" href="../reference.html">
     Reference
   </a>
 </li>
@@ -421,12 +421,10 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="how-to/remote-work.html">Work remotely through an SSH tunnel</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/enable-hotfix.html">Prepare a workload for hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/restart-and-recover.html">Restart, recover and retire a hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/troubleshooting.html">Troubleshoot a debugging session</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/build-docs.html">Build and publish the docs</a></li>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="setup.html">Setup</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Debug a running application with attach</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hotfix.html">Edit and debug an application with hotfix</a></li>
 </ul>
 </div>
 </nav></div>
@@ -463,11 +461,14 @@
   <ul class="bd-breadcrumbs">
     
     <li class="breadcrumb-item breadcrumb-home">
-      <a href="index.html" class="nav-link" aria-label="Home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">How-to guides</span></li>
+    
+    <li class="breadcrumb-item"><a href="../tutorials.html" class="nav-link">Tutorials</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Debug a running application with attach</span></li>
   </ul>
 </nav>
 </div>
@@ -484,17 +485,113 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="how-to-guides">
-<h1>How-to guides<a class="headerlink" href="#how-to-guides" title="Link to this heading">#</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="how-to/remote-work.html">Work remotely through an SSH tunnel</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/enable-hotfix.html">Prepare a workload for hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/restart-and-recover.html">Restart, recover and retire a hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/troubleshooting.html">Troubleshoot a debugging session</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/build-docs.html">Build and publish the docs</a></li>
-</ul>
+  <section id="debug-a-running-application-with-attach">
+<h1>Debug a running application with attach<a class="headerlink" href="#debug-a-running-application-with-attach" title="Link to this heading">#</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Attaching a debugger depends on the host’s ptrace policy. This workflow worked on
+DLS RHEL 8 servers with <code class="docutils literal notranslate"><span class="pre">ptrace_scope=0</span></code>; newer DLS RHEL 9 servers use a more
+restrictive setting, which can prevent debugger attachment even when the seat
+connects successfully.</p>
+<p>Hotfix can work around this by making the application opt into debugging when it
+restarts. Supporting plain attach on these hosts will require a small change to
+the application containers we ship. Until then, use the <a class="reference internal" href="hotfix.html"><span class="std std-doc">hotfix workflow</span></a>
+on affected servers.</p>
 </div>
+<p>Inspect a running application without replacing its container. You will attach
+a seat, read a backtrace, and open the same application in VS Code. Complete
+<a class="reference internal" href="setup.html"><span class="std std-doc">setup</span></a> first.</p>
+<p>The worked example is the PMAC IOC on P47, pod <code class="docutils literal notranslate"><span class="pre">bl47p-mo-ioc-01-0</span></code>. Substitute
+your own pod name when following the workflow on another beamline or cluster.</p>
+<section id="attach-a-seat">
+<h2>Attach a seat<a class="headerlink" href="#attach-a-seat" title="Link to this heading">#</a></h2>
+<p>On your workstation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>module<span class="w"> </span>load<span class="w"> </span>ec/p47
+podbench<span class="w"> </span>attach<span class="w"> </span>bl47p-mo-ioc-01-0
+</pre></div>
+</div>
+<p>This pod has one application container. For multi-container pods, add
+<code class="docutils literal notranslate"><span class="pre">--target</span> <span class="pre">CONTAINER</span></code> to attach or IDE commands; otherwise Podbench selects the
+first application container without an error.</p>
+<p>Example output after completing setup:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>landed podbench-1 for p47-beamline/bl47p-mo-ioc-01-0/bl47p-mo-ioc-01
+connect: ssh podbench.p47-beamline.bl47p-mo-ioc-01-0.1.a1b2c3d4
+</pre></div>
+</div>
+<p>If a seat already exists, the first line says <code class="docutils literal notranslate"><span class="pre">reusing</span></code> instead of <code class="docutils literal notranslate"><span class="pre">landed</span></code>.
+Run the command after <code class="docutils literal notranslate"><span class="pre">connect:</span></code> to enter the seat:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Copy the SSH command from your own output; the alias suffix will differ.</span>
+ssh<span class="w"> </span>podbench.p47-beamline.bl47p-mo-ioc-01-0.1.a1b2c3d4
+</pre></div>
+</div>
+<p>You are now <strong>in the seat</strong>, an ephemeral container with Git, uv, GDB, strace and
+process tools. The connection travels
+through <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">exec</span></code>; you do not need a pod IP or an exposed SSH service.</p>
+</section>
+<section id="inspect-the-ioc-in-gdb">
+<h2>Inspect the IOC in GDB<a class="headerlink" href="#inspect-the-ioc-in-gdb" title="Link to this heading">#</a></h2>
+<p>In the seat:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>debug
+</pre></div>
+</div>
+<p>Use the arrow keys to select the IOC executable and press Enter. Select the IOC
+process itself, rather than its shell, <code class="docutils literal notranslate"><span class="pre">stdio-socket</span></code>, or hotfix supervisor.
+The process stops when GDB attaches. At the GDB prompt:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>info threads
+thread apply all bt
+continue
+</pre></div>
+</div>
+<p>You should see the IOC’s threads and their stacks. <code class="docutils literal notranslate"><span class="pre">continue</span></code> lets it run again;
+Ctrl+C interrupts it for another inspection. Finish with:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>detach
+quit
+</pre></div>
+</div>
+<p>Detaching resumes the application. Exit the SSH shell when finished.
+Source-level inspection needs an image with matching debug symbols and source.
+For example, the PMAC IOC uses an <code class="docutils literal notranslate"><span class="pre">ioc-pmac-developer</span></code> image.
+If you see only addresses, see <a class="reference internal" href="../how-to/troubleshooting.html"><span class="std std-doc">troubleshooting</span></a>.</p>
+</section>
+<section id="use-vs-code">
+<h2>Use VS Code<a class="headerlink" href="#use-vs-code" title="Link to this heading">#</a></h2>
+<p>Back on your workstation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>ide<span class="w"> </span>vscode<span class="w"> </span>bl47p-mo-ioc-01-0
+</pre></div>
+</div>
+<p>Accept workspace trust if appropriate for the displayed seat and checkout. Wait
+for Remote-SSH and the remote extensions to finish loading, then open <strong>Run and
+Debug</strong>.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Select the launcher named <strong><code class="docutils literal notranslate"><span class="pre">Podbench:</span> <span class="pre">Attach</span> <span class="pre">—</span> <span class="pre">…</span></code></strong> for the IOC executable.
+<strong>Launchers supplied by the target repository will not work.</strong> Podbench’s
+launchers resolve the current process and supply filesystem mappings and debugger setup needed
+for this seat. Check the <code class="docutils literal notranslate"><span class="pre">Podbench</span></code> prefix before pressing F5.</p>
+</div>
+<p>Start that launcher, pause briefly, and inspect <strong>Call Stack</strong>, <strong>Threads</strong> and
+<strong>Variables</strong>. Resume with F5; use <strong>Stop Debugging</strong> to disconnect when done.
+After an application restart, start the same Attach configuration again; it
+resolves the replacement process without regenerating the workspace.</p>
+<p>By default, IDE launch adds 4 CPU / 8 GiB of limit headroom and 2 CPU / 4 GiB of
+requests to the live pod (Guaranteed pods reserve the full limit). It requires
+in-place resize support and permission. Reconnecting does not add it again.
+If you have sufficient existing resources, use <code class="docutils literal notranslate"><span class="pre">--no-headroom</span></code> to skip resizing.</p>
+</section>
+<section id="check-the-session-is-finished">
+<h2>Check the session is finished<a class="headerlink" href="#check-the-session-is-finished" title="Link to this heading">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>status
+kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>bl47p-mo-ioc-01-0
+</pre></div>
+</div>
+<p>The application should be running. Closing SSH or VS Code leaves the seat
+available to reconnect; Kubernetes removes ephemeral containers when the pod is
+replaced. Do not delete the application pod merely to tidy up a seat.</p>
+<p>Plain attach leaves an ordinary workload’s liveness probes unchanged, so a long
+debugger pause can cause Kubernetes to restart the application. The host’s ptrace
+restrictions also apply, as described in the warning above. Use the
+<a class="reference internal" href="hotfix.html"><span class="std std-doc">hotfix workflow</span></a> for probe protection and source editing.</p>
+</section>
 </section>
 
 
@@ -508,20 +605,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="tutorials/hotfix.html"
+       href="setup.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Edit and debug an application with hotfix</p>
+        <p class="prev-next-title">Setup</p>
       </div>
     </a>
     <a class="right-next"
-       href="how-to/remote-work.html"
+       href="hotfix.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Work remotely through an SSH tunnel</p>
+        <p class="prev-next-title">Edit and debug an application with hotfix</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -537,10 +634,25 @@
 
 
   <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attach-a-seat">Attach a seat</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inspect-the-ioc-in-gdb">Inspect the IOC in GDB</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#use-vs-code">Use VS Code</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#check-the-session-is-finished">Check the session is finished</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/epics-containers/podbench/edit/main/docs/how-to.md">
+    <a href="https://github.com/epics-containers/podbench/edit/main/docs/tutorials/attach.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -555,7 +667,7 @@
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="_sources/how-to.md.txt">
+    <a href="../_sources/tutorials/attach.md.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
@@ -574,8 +686,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">

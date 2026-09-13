@@ -2,13 +2,13 @@
 <!DOCTYPE html>
 
 
-<html lang="en" data-content_root="./" >
+<html lang="en" data-content_root="../" >
 
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>How-to guides &#8212; podbench 0.20.1.dev5+g599241339 documentation</title>
+    <title>Work remotely through an SSH tunnel &#8212; podbench 0.20.1.dev5+g599241339 documentation</title>
   
   
   
@@ -27,27 +27,27 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
-    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="_static/documentation_options.js?v=dcb443c8"></script>
-    <script src="_static/doctools.js?v=fd6eb6e6"></script>
-    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
-    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
-    <script src="_static/copybutton.js?v=30646c52"></script>
-    <script src="_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to';</script>
+    <script src="../_static/documentation_options.js?v=dcb443c8"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/remote-work';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://epics-containers.github.io/podbench/switcher.json';
@@ -56,19 +56,19 @@
             false;
         </script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
-    <link rel="icon" href="_static/dls-logo.svg"/>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Work remotely through an SSH tunnel" href="how-to/remote-work.html" />
-    <link rel="prev" title="Edit and debug an application with hotfix" href="tutorials/hotfix.html" />
+    <link rel="icon" href="../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Prepare a workload for hotfix" href="enable-hotfix.html" />
+    <link rel="prev" title="How-to guides" href="../how-to.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
   
     
-    <script src="_static/searchtools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script src="searchindex.js"></script>
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
   
   </head>
   <body data-default-mode="">
@@ -88,7 +88,7 @@
   <dialog id="pst-search-dialog">
     
 <form class="bd-search d-flex align-items-center"
-      action="search.html"
+      action="../search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -124,7 +124,7 @@
     
   
 
-<a class="navbar-brand logo" href="index.html">
+<a class="navbar-brand logo" href="../index.html">
   
   
   
@@ -135,8 +135,8 @@
       
     
     
-    <img src="_static/dls-logo.svg" class="logo__image only-light" alt=""/>
-    <img src="_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
   
   
     <p class="title logo__title">podbench</p>
@@ -154,28 +154,28 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="tutorials.html">
+  <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
 </li>
 
 
 <li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
+  <a class="nav-link nav-internal" href="../how-to.html">
     How-to guides
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="explanations.html">
+  <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="reference.html">
+  <a class="nav-link nav-internal" href="../reference.html">
     Reference
   </a>
 </li>
@@ -307,28 +307,28 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="tutorials.html">
+  <a class="nav-link nav-internal" href="../tutorials.html">
     Tutorials
   </a>
 </li>
 
 
 <li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
+  <a class="nav-link nav-internal" href="../how-to.html">
     How-to guides
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="explanations.html">
+  <a class="nav-link nav-internal" href="../explanations.html">
     Explanations
   </a>
 </li>
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="reference.html">
+  <a class="nav-link nav-internal" href="../reference.html">
     Reference
   </a>
 </li>
@@ -421,12 +421,12 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="how-to/remote-work.html">Work remotely through an SSH tunnel</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/enable-hotfix.html">Prepare a workload for hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/restart-and-recover.html">Restart, recover and retire a hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/troubleshooting.html">Troubleshoot a debugging session</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/build-docs.html">Build and publish the docs</a></li>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Work remotely through an SSH tunnel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="enable-hotfix.html">Prepare a workload for hotfix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="restart-and-recover.html">Restart, recover and retire a hotfix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshoot a debugging session</a></li>
+<li class="toctree-l1"><a class="reference internal" href="build-docs.html">Build and publish the docs</a></li>
 </ul>
 </div>
 </nav></div>
@@ -463,11 +463,14 @@
   <ul class="bd-breadcrumbs">
     
     <li class="breadcrumb-item breadcrumb-home">
-      <a href="index.html" class="nav-link" aria-label="Home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">How-to guides</span></li>
+    
+    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to guides</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Work remotely through an SSH tunnel</span></li>
   </ul>
 </nav>
 </div>
@@ -484,17 +487,99 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="how-to-guides">
-<h1>How-to guides<a class="headerlink" href="#how-to-guides" title="Link to this heading">#</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="how-to/remote-work.html">Work remotely through an SSH tunnel</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/enable-hotfix.html">Prepare a workload for hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/restart-and-recover.html">Restart, recover and retire a hotfix</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/troubleshooting.html">Troubleshoot a debugging session</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-to/build-docs.html">Build and publish the docs</a></li>
-</ul>
+  <section id="work-remotely-through-an-ssh-tunnel">
+<h1>Work remotely through an SSH tunnel<a class="headerlink" href="#work-remotely-through-an-ssh-tunnel" title="Link to this heading">#</a></h1>
+<p>Use this when your laptop can SSH to a DLS workstation but cannot reach the
+Kubernetes API directly. Podbench’s SSH transport uses <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">exec</span></code>, so an API
+tunnel is sufficient for attach and the generated VS Code launchers.</p>
+<p>The commands use P47 as an example. Substitute your beamline module, namespace,
+SSH host and kubeconfig path.</p>
+<p>The scripts live in the <a class="reference external" href="https://github.com/epics-containers/podbench/tree/main/k8s">Podbench repository</a>,
+not the installed CLI. Run them from a checkout on each machine that needs them.
+The scripts require Bash, kubectl and OpenSSH; copying permissions with <code class="docutils literal notranslate"><span class="pre">--all</span></code>
+also requires jq.</p>
+<section id="create-a-namespace-credential-on-the-dls-host">
+<h2>Create a namespace credential on the DLS host<a class="headerlink" href="#create-a-namespace-credential-on-the-dls-host" title="Link to this heading">#</a></h2>
+<p>On a DLS host with your own cluster credential and permission to create
+ServiceAccounts, Roles and RoleBindings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>module<span class="w"> </span>load<span class="w"> </span>ec/p47
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/epics-containers/podbench.git
+<span class="nb">cd</span><span class="w"> </span>podbench
+./k8s/make-agent-sa.sh<span class="w"> </span>p47-beamline<span class="w"> </span>--podbench<span class="w"> </span>--duration<span class="w"> </span>24h
+</pre></div>
 </div>
+<p>Use the output filename printed by the script. It creates a namespace-confined
+account named <code class="docutils literal notranslate"><span class="pre">agent-USER</span></code> and a self-contained kubeconfig under <code class="docutils literal notranslate"><span class="pre">k8s/</span></code>.
+<code class="docutils literal notranslate"><span class="pre">--podbench</span></code> grants the attach/exec tier. For VS Code with this tier, add
+<code class="docutils literal notranslate"><span class="pre">--no-headroom</span></code>; the default IDE resize needs additional pod patch permissions.</p>
+<p>If the session needs your existing write permissions, use <code class="docutils literal notranslate"><span class="pre">--all</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">--podbench</span></code>. It copies your current resource permissions within this namespace,
+including secrets if you can access them. It does not copy cluster-scoped access.
+For narrower access, ask your administrator for the specific permissions reported
+by Podbench. The script’s historical tier names do not cover every current IDE
+operation; <code class="docutils literal notranslate"><span class="pre">--podbench=resize</span></code> alone does not grant <code class="docutils literal notranslate"><span class="pre">patch</span> <span class="pre">pods</span></code>.</p>
+<p>The token normally lasts for the requested duration, but the server may shorten
+it; the script prints its actual expiry. Rerun with your own credential to renew.
+Keep generated kubeconfigs private and out of Git.</p>
+</section>
+<section id="start-the-tunnel-on-your-laptop">
+<h2>Start the tunnel on your laptop<a class="headerlink" href="#start-the-tunnel-on-your-laptop" title="Link to this heading">#</a></h2>
+<p>Install Podbench, kubectl and SSH locally as described in
+<a class="reference internal" href="../tutorials/setup.html"><span class="std std-doc">setup</span></a>. In a local Podbench checkout, set the actual
+SSH host and <strong>absolute path printed on the DLS host</strong>. For example, replace
+<code class="docutils literal notranslate"><span class="pre">FEDID</span></code> and <code class="docutils literal notranslate"><span class="pre">DLS_HOST</span></code> in:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">REMOTE_KUBECONFIG</span><span class="o">=</span><span class="s1">&#39;FEDID@DLS_HOST:/home/FEDID/podbench/k8s/p47-beamline-agent-FEDID.kubeconfig&#39;</span>
+./k8s/vpn-api-tunnel.sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REMOTE_KUBECONFIG</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">/k8s/p47-tunnel.kubeconfig&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">/k8s/p47-tunnel.kubeconfig&quot;</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>pods
+podbench<span class="w"> </span>doctor<span class="w"> </span>--fix
+podbench<span class="w"> </span>ide<span class="w"> </span>vscode<span class="w"> </span>p47-blueapi-0<span class="w"> </span>--no-headroom
+</pre></div>
+</div>
+<p>The script reads the source over SSH and writes a local kubeconfig using a
+loopback API address. It retains the namespace and verifies TLS using the original
+API hostname and CA. The host holding the file is also the default tunnel host;
+use <code class="docutils literal notranslate"><span class="pre">--ssh-host</span> <span class="pre">HOST</span></code> if the API must be reached through another machine.</p>
+<p>For an existing local kubeconfig, the equivalent is:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./k8s/vpn-api-tunnel.sh<span class="w"> </span>k8s/p47-beamline-agent-FEDID.kubeconfig<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ssh-host<span class="w"> </span>FEDID@DLS_HOST<span class="w"> </span>--out<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">/k8s/p47-tunnel.kubeconfig&quot;</span>
+</pre></div>
+</div>
+<p>Use the same <code class="docutils literal notranslate"><span class="pre">KUBECONFIG</span></code> when generating SSH aliases and opening VS Code.
+Podbench pins aliases to the context and kubeconfig paths used at attach time.
+After changing the file path or context, regenerate them with attach or IDE.</p>
+<div class="admonition-outside-dls admonition">
+<p class="admonition-title">Outside DLS</p>
+<p>Use an SSH host that can reach your API server, and your own namespace and
+kubeconfig. If credentials use a local authentication plugin, that plugin must
+also be available on your laptop; a ServiceAccount kubeconfig avoids that dependency.</p>
+</div>
+</section>
+<section id="reconnect-and-clean-up">
+<h2>Reconnect and clean up<a class="headerlink" href="#reconnect-and-clean-up" title="Link to this heading">#</a></h2>
+<p>If the connection times out after a network change, stop and recreate the tunnel
+using the <strong>same source argument</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./k8s/vpn-api-tunnel.sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REMOTE_KUBECONFIG</span><span class="s2">&quot;</span><span class="w"> </span>--stop
+./k8s/vpn-api-tunnel.sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REMOTE_KUBECONFIG</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">/k8s/p47-tunnel.kubeconfig&quot;</span>
+kubectl<span class="w"> </span>--request-timeout<span class="o">=</span>10s<span class="w"> </span>get<span class="w"> </span>pods
+</pre></div>
+</div>
+<p>An SSH master can still report that it is running while its API forwarding is
+stalled. If a fresh tunnel also fails, check whether the DLS host can reach the
+API and whether the token expired. <code class="docutils literal notranslate"><span class="pre">--local-port</span> <span class="pre">16443</span></code> selects another local
+port if needed.</p>
+<p>When finished, close VS Code and SSH sessions, stop the tunnel, and <code class="docutils literal notranslate"><span class="pre">unset</span> <span class="pre">KUBECONFIG</span></code> to restore normal kubeconfig discovery. To revoke the temporary account,
+on the <strong>DLS host using your own credential</strong> run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>module<span class="w"> </span>load<span class="w"> </span>ec/p47
+./k8s/delete-agent-sa.sh<span class="w"> </span>p47-beamline
+</pre></div>
+</div>
+<p>Review its confirmation prompt. Deleting the account invalidates its tokens and
+removes the source kubeconfig there; also remove the local tunnel kubeconfig when
+no longer needed.</p>
+</section>
 </section>
 
 
@@ -508,20 +593,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="tutorials/hotfix.html"
+       href="../how-to.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Edit and debug an application with hotfix</p>
+        <p class="prev-next-title">How-to guides</p>
       </div>
     </a>
     <a class="right-next"
-       href="how-to/remote-work.html"
+       href="enable-hotfix.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Work remotely through an SSH tunnel</p>
+        <p class="prev-next-title">Prepare a workload for hotfix</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -537,10 +622,24 @@
 
 
   <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#create-a-namespace-credential-on-the-dls-host">Create a namespace credential on the DLS host</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#start-the-tunnel-on-your-laptop">Start the tunnel on your laptop</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reconnect-and-clean-up">Reconnect and clean up</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/epics-containers/podbench/edit/main/docs/how-to.md">
+    <a href="https://github.com/epics-containers/podbench/edit/main/docs/how-to/remote-work.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -555,7 +654,7 @@
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="_sources/how-to.md.txt">
+    <a href="../_sources/how-to/remote-work.md.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
@@ -574,8 +673,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">

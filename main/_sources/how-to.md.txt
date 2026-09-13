@@ -1,10 +1,11 @@
-# How-to Guides
-
-Practical step-by-step guides for the more experienced user.
+# How-to guides
 
 ```{toctree}
 :maxdepth: 1
-:glob:
 
-how-to/*
+how-to/remote-work
+how-to/enable-hotfix
+how-to/restart-and-recover
+how-to/troubleshooting
+how-to/build-docs
 ```
