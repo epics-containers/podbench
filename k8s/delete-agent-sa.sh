@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# Remove a Claude ServiceAccount and its RBAC from a namespace.
+# Remove an agent ServiceAccount and its RBAC from a namespace.
 #
-#   ./k8s/delete-claude-sa.sh <namespace> [--user <name>] [--all] [--yes]
+#   ./k8s/delete-agent-sa.sh <namespace> [--user <name>] [--all] [--yes]
 #
-# By default it removes claude-$USER. --user removes somebody else's, --all
-# removes every account this repo's make-claude-sa.sh created in the namespace
+# By default it removes agent-$USER. --user removes somebody else's, --all
+# removes every account this repo's make-agent-sa.sh created in the namespace
 # (matched by label, not by name pattern, so it cannot catch a bystander).
 #
 # There are exactly three cluster objects per account - ServiceAccount, Role,
@@ -41,8 +41,8 @@ HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # --- what are we deleting? -------------------------------------------------
 if [ "$ALL" = 1 ]; then
   [ -z "$WHO" ] || { echo "--all and --user are mutually exclusive" >&2; exit 1; }
-  # Match on the label make-claude-sa.sh stamps, so an account someone created
-  # by hand and happened to call claude-something is left alone.
+  # Match on the label make-agent-sa.sh stamps, so an account someone created
+  # by hand and happened to call agent-something is left alone.
   mapfile -t NAMES < <(kubectl -n "$NS" get serviceaccounts -l "$LABEL" \
                         -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)
 else
@@ -51,7 +51,7 @@ else
     WHO=$(printf '%s' "$WHO" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9-' '-' \
           | sed -e 's/^-*//' -e 's/-*$//')
   fi
-  NAMES=("claude-${WHO#claude-}")
+  NAMES=("agent-${WHO#agent-}")
 fi
 
 if [ "${#NAMES[@]}" -eq 0 ] || [ -z "${NAMES[0]}" ]; then
