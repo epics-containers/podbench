@@ -67,6 +67,7 @@ try {
     return result.result.value;
   }
   const required = () => { if (!args.length) throw Error(`${action} requires an argument`); return args.join(' '); };
+  if (['key', 'text', 'click'].includes(action)) await send('Page.bringToFront');
   if (action === 'snapshot') {
     console.log(JSON.stringify(await evaluate(`({
       title: document.title,
