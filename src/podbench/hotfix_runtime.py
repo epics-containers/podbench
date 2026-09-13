@@ -11,6 +11,7 @@ from .hotfix_core import (
     HotfixError,
     Target,
     exec_target,
+    find_container,
     load_json,
     resolve_target,
 )
@@ -151,7 +152,7 @@ def restart(
 ) -> list[str]:
     if deadline < 1:
         raise HotfixError("restart deadline must be at least one second")
-    target, _ = resolve_target(kube, pod_name, container)
+    target, pod = resolve_target(kube, pod_name, container)
     _manifest(kube, target)
     if reinstall:
         sync = (
@@ -169,6 +170,22 @@ def restart(
             )
         _seat_run(kube, target, seat.name, sync, timeout=600.0)
     before = exec_target(kube, target, f"cat {HOTFIX_CHILD_PID_PATH}").stdout.strip()
+    spec = find_container(pod, target.container)
+    probe = spec.get("readinessProbe") or spec.get("livenessProbe") or {}
+    command = probe.get("exec", {}).get("command", [])
+    # Run the real probe without its generated hold shortcut. Keep Kubernetes
+    # probes held until startup completes, not merely until a new PID exists.
+    health = (
+        shlex.join(
+            ["timeout", str(probe.get("timeoutSeconds", 1))]
+            + [
+                part.replace(HOTFIX_HOLD_PATH, "/proc/self/podbench-no-hold")
+                for part in command
+            ]
+        )
+        if command
+        else "true"
+    )
     script = "\n".join(
         [
             "set -eu",
@@ -177,14 +194,14 @@ def restart(
             f"trap 'rm -f {HOTFIX_HOLD_PATH}' EXIT",
             f"child=$(cat {HOTFIX_CHILD_PID_PATH})",
             'kill -TERM -"$child" 2>/dev/null || kill -TERM "$child"',
-            f"attempts=$(( {deadline} * 10 ))",
-            "grace=100",
-            '[ "$grace" -lt "$attempts" ] || grace=$(( attempts / 2 ))',
-            'for attempt in $(seq 1 "$attempts"); do',
+            f"kill_at=$(( $(date +%s) + {min(10, max(1, deadline // 2))} ))",
+            'while [ "$(date +%s)" -lt "$expires" ]; do',
             f"  new=$(cat {HOTFIX_CHILD_PID_PATH} 2>/dev/null || true)",
-            '  [ -n "$new" ] && [ "$new" != "$child" ] && exit 0',
-            '  if [ "$attempt" -eq "$grace" ]; then',
-            '    kill -KILL -"$child" 2>/dev/null || kill -KILL "$child"',
+            '  if [ -n "$new" ] && [ "$new" != "$child" ]; then',
+            f"    if {health} >/dev/null 2>&1; then exit 0; fi",
+            '  elif [ "$(date +%s)" -ge "$kill_at" ]; then',
+            '    kill -KILL -"$child" 2>/dev/null || '
+            'kill -KILL "$child" 2>/dev/null || true',
             "  fi",
             "  sleep 0.1",
             "done",
