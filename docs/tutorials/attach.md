@@ -2,7 +2,7 @@
 
 :::{warning}
 Attaching a debugger depends on the host's ptrace policy. This workflow worked on
-DLS RHEL 8 servers with `ptrace_scope=0`; newer DLS RHEL 9 servers use a more
+DLS RHEL 7 servers with `ptrace_scope=0`; DLS servers running RHEL 8 or above use a more
 restrictive setting, which can prevent debugger attachment even when the seat
 connects successfully.
 
