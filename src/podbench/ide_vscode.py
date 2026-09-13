@@ -149,11 +149,19 @@ def open_vscode(
             "VS Code did not start its remote server; "
             "check the Remote-SSH window and rerun"
         )
+    installed = set(
+        _run([*ssh, shlex.join([server, "--list-extensions"])]).lower().splitlines()
+    )
     for extension in prepared["extensions"]:
+        if extension.lower() in installed:
+            continue
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise KubectlError("timed out while installing remote extensions")
         console.print(f"Installing {extension} in the seat...")
         _run(
             [*ssh, shlex.join([server, "--install-extension", extension])],
-            timeout=timeout,
+            timeout=remaining,
         )
     installed = (
         _run([*ssh, shlex.join([server, "--list-extensions"])]).lower().splitlines()
