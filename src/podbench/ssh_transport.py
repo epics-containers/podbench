@@ -145,6 +145,7 @@ def wire_ssh(
     identity: str = DEFAULT_IDENTITY,
     config_dir: str | None = None,
     forward_agent: bool = False,
+    ide: bool = False,
 ) -> SSHWiring:
     private_key, public_key = read_public_key(identity)
     context = (
@@ -167,11 +168,17 @@ def wire_ssh(
     pod_uid = str(as_dict(pod_json.get("metadata")).get("uid") or pod.name)
     label = _seat_suffix(seat)
     alias = f"podbench.{pod.namespace}.{pod.name}.{label}.{connection}"
+    if ide:
+        alias += ".ide"
     host_key_alias = f"podbench-{connection}-{pod_uid}-{seat}"
 
     directory = client_directory(config_dir)
     config_directory = directory / "config.d"
-    config = config_directory / f"{pod.namespace}-{pod.name}-{label}-{connection}.conf"
+    suffix = "-ide" if ide else ""
+    config = (
+        config_directory
+        / f"{pod.namespace}-{pod.name}-{label}-{connection}{suffix}.conf"
+    )
     known_hosts = directory / "known_hosts"
     _write_known_hosts(known_hosts, host_key_alias, server.host_public_key)
     _ensure_control_dir()
@@ -204,17 +211,23 @@ def wire_ssh(
             f"    User {server.login}",
             f"    IdentityFile {_quote_config(str(private_key))}",
             "    IdentitiesOnly yes",
+            f"    ForwardAgent {'yes' if forward_agent else 'no'}",
             *(
-                ["    ForwardAgent yes", "    ControlMaster no", "    ControlPath none"]
+                [
+                    "    ControlMaster no",
+                    "    ControlPath none",
+                    "    ControlPersist no",
+                ]
                 if forward_agent
-                else []
+                else [
+                    "    ControlMaster auto",
+                    f"    ControlPath {_control_path(host_key_alias + suffix)}",
+                    "    ControlPersist 10m",
+                ]
             ),
             f"    ProxyCommand {shlex.join(proxy)}",
             "    ServerAliveInterval 15",
             "    ServerAliveCountMax 3",
-            "    ControlMaster auto",
-            f"    ControlPath {_control_path(host_key_alias)}",
-            "    ControlPersist 10m",
             f"    HostKeyAlias {host_key_alias}",
             f"    UserKnownHostsFile {_quote_config(str(known_hosts))}",
             "    StrictHostKeyChecking yes",

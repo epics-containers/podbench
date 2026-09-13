@@ -11,7 +11,7 @@ from importlib.resources import files
 from urllib.parse import quote
 
 from .cli import console
-from .doctor import ensure_include
+from .doctor import include_is_active
 from .ide_resources import ensure_headroom
 from .kubectl import Kubectl, KubectlError, run_subprocess
 from .launcher import attach, resolve_pod_name, target_container_name
@@ -26,6 +26,39 @@ def _run(argv: list[str], *, stdin: str | None = None, timeout: float = 30) -> s
     return result.stdout.strip()
 
 
+def _upload_helpers(kube: Kubectl, pod: str, seat: str) -> str:
+    modules = (
+        "ide_remote",
+        "ide_launchers",
+        "ide_python",
+        "gdb_support",
+        "gdb_session",
+        "debug_model",
+        "ssh_agent",
+    )
+    sources = {
+        f"{name}.py": files("podbench").joinpath(f"{name}.py").read_text()
+        for name in modules
+    }
+    sources["__init__.py"] = '"""Private workstation IDE helpers."""\n'
+    result = kube.exec_(
+        pod,
+        [
+            PYTHON,
+            "-c",
+            "import json,pathlib,sys,tempfile; "
+            "root=pathlib.Path(tempfile.mkdtemp(prefix='podbench-ide-')); "
+            "package=root/'podbench'; package.mkdir(mode=0o700); "
+            "[(package/name).write_text(source) "
+            "for name,source in json.load(sys.stdin).items()]; "
+            "print(root)",
+        ],
+        container=seat,
+        stdin=json.dumps(sources),
+    )
+    return result.stdout.strip()
+
+
 def open_vscode(
     kube: Kubectl,
     pod: str,
@@ -36,16 +69,21 @@ def open_vscode(
     config_dir: str | None,
     code: str,
     timeout: float,
+    no_headroom: bool = False,
+    forward_agent: bool = False,
 ) -> None:
-    for binary in (code, "ssh", "ssh-add", "git"):
+    for binary in (code, "ssh", "git", *(("ssh-add",) if forward_agent else ())):
         if shutil.which(binary) is None:
             raise KubectlError(f"{binary} is required on the workstation")
     read_public_key(identity)
-    if not os.environ.get("SSH_AUTH_SOCK"):
+    if not include_is_active(config_dir):
+        raise KubectlError("SSH Include is not active; run podbench doctor --fix first")
+    if forward_agent and not os.environ.get("SSH_AUTH_SOCK"):
         raise KubectlError(
             "start an SSH agent and load your Git key with ssh-add first"
         )
-    _run(["ssh-add", "-l"])
+    if forward_agent:
+        _run(["ssh-add", "-l"])
     git_identity = {}
     for key in ("user.name", "user.email"):
         result = run_subprocess(["git", "config", "--get", key])
@@ -55,7 +93,10 @@ def open_vscode(
             git_identity[key] = result.stdout.strip()
     pod = resolve_pod_name(pod)
     target = target_container_name(kube.get_pod(pod), target)
-    ensure_headroom(kube, pod, target, timeout)
+    if no_headroom:
+        console.print("Using existing pod resources (--no-headroom); skipping resize.")
+    else:
+        ensure_headroom(kube, pod, target, timeout)
     console.print("Preparing the debug seat and SSH...")
     session = attach(kube, pod, target=target, image=image, ssh=True, timeout=timeout)
     if missing_ssh_capabilities(kube, session.seat.pod, session.seat.container) != ():
@@ -68,30 +109,20 @@ def open_vscode(
         session.seat.container,
         identity=identity,
         config_dir=config_dir,
-        forward_agent=True,
+        forward_agent=forward_agent,
+        ide=True,
     )
-    ensure_include(config_dir)
-    # Send these small helpers so workstation changes also work with existing images.
-    for module in ("ide_remote", "ide_python"):
-        source = files("podbench").joinpath(f"{module}.py").read_text()
-        kube.exec_(
-            pod,
-            [
-                PYTHON,
-                "-c",
-                "import pathlib,sys; "
-                "pathlib.Path(sys.argv[1]).write_text(sys.stdin.read())",
-                f"/tmp/podbench-{module}.py",
-            ],
-            container=session.seat.container,
-            stdin=source,
-        )
+    # Keep the complete helper dependency set private and independent of the
+    # installed seat package, including when reconnecting to an older image.
+    bundle = _upload_helpers(kube, pod, session.seat.container)
+    helper = shlex.join(
+        ["env", f"PYTHONPATH={bundle}", PYTHON, "-m", "podbench.ide_remote"]
+    )
     ssh = ["ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", wiring.alias]
-    agent = _run([*ssh, "ssh-add -l"])
-    if not agent:
+    if forward_agent and not _run([*ssh, "ssh-add -l"]):
         raise KubectlError("SSH agent forwarding did not reach the seat")
     result = _run(
-        [*ssh, f"{PYTHON} /tmp/podbench-ide_remote.py prepare"],
+        [*ssh, f"{helper} prepare"],
         stdin=json.dumps(git_identity),
     )
     prepared = json.loads(result)
@@ -102,12 +133,14 @@ def open_vscode(
     uri = f"vscode-remote://ssh-remote+{wiring.alias}{path}"
     bootstrap = f"vscode-remote://ssh-remote+{wiring.alias}"
     bootstrap += quote(prepared["bootstrap"], safe="/")
+    # A plain folder opens first: the remote server must run before extensions
+    # can be installed into it, and the workspace file waits for those extensions.
     console.print("Opening VS Code and waiting for its remote server...")
     _run([code, "--new-window", "--folder-uri", bootstrap], timeout=timeout)
     deadline = time.monotonic() + timeout
     server = ""
     while time.monotonic() < deadline:
-        server = _run([*ssh, f"{PYTHON} /tmp/podbench-ide_remote.py server"])
+        server = _run([*ssh, f"{helper} server"])
         if server:
             break
         time.sleep(2)
@@ -116,11 +149,19 @@ def open_vscode(
             "VS Code did not start its remote server; "
             "check the Remote-SSH window and rerun"
         )
+    installed = set(
+        _run([*ssh, shlex.join([server, "--list-extensions"])]).lower().splitlines()
+    )
     for extension in prepared["extensions"]:
+        if extension.lower() in installed:
+            continue
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise KubectlError("timed out while installing remote extensions")
         console.print(f"Installing {extension} in the seat...")
         _run(
             [*ssh, shlex.join([server, "--install-extension", extension])],
-            timeout=timeout,
+            timeout=remaining,
         )
     installed = (
         _run([*ssh, shlex.join([server, "--list-extensions"])]).lower().splitlines()

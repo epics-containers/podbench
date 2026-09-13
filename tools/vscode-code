@@ -1,0 +1,7 @@
+#!/bin/sh
+# Pass this wrapper to `podbench ide vscode --code` to keep automation isolated.
+set -eu
+base=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+exec code --user-data-dir "${PODBENCH_VSCODE_DATA:-$base/tmp/vscode}" \
+    --remote-debugging-address=127.0.0.1 \
+    --remote-debugging-port="${PODBENCH_VSCODE_PORT:-9222}" "$@"

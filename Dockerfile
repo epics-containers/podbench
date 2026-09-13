@@ -115,6 +115,12 @@ ENV UV_PYTHON_INSTALL_DIR=/python
 COPY --from=build /app/.venv /app/.venv
 ENV PATH=/app/.venv/bin:$PATH
 
+# debugpy for `podbench ide vscode`: the seat runs debugpy's attach-to-pid with
+# its own interpreter and copies this directory into the target's /tmp. It stays
+# outside the venv so the podbench wheel keeps its two runtime dependencies.
+RUN uv pip install --python /app/.venv/bin/python \
+    --target /opt/podbench/debugpy debugpy==1.8.21
+
 # SSH commands and login shells must both be able to find the CLI.
 RUN ln -s /app/.venv/bin/podbench /usr/local/bin/podbench
 

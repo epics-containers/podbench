@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import pwd
 import select
-import shlex
 import shutil
 import sys
 import termios
@@ -22,34 +21,8 @@ from rich.table import Table
 from rich.text import Text
 
 from .cli import console, error_console, new_app, run
-from .debug_model import Process
+from .debug_model import Process, read_process
 from .gdb_support import ptrace_warning, thread_db_arguments
-
-
-def _read_process(path: Path) -> Process | None:
-    try:
-        fields = {
-            key: value.strip()
-            for line in (path / "status").read_text().splitlines()
-            for key, separator, value in [line.partition(":")]
-            if separator
-        }
-        arguments = (path / "cmdline").read_bytes().rstrip(b"\0").split(b"\0")
-        printable = [
-            " ".join(argument.decode(errors="replace").split())
-            for argument in arguments
-        ]
-        command = shlex.join(printable) if arguments else f"[{fields['Name']}]"
-        return Process(
-            pid=int(path.name),
-            ppid=int(fields["PPid"]),
-            uid=int(fields["Uid"].split()[0]),
-            gid=int(fields["Gid"].split()[0]),
-            state=fields["State"].split()[0],
-            command=command,
-        )
-    except (OSError, KeyError, ValueError):
-        return None
 
 
 def _processes() -> list[Process]:
@@ -57,7 +30,7 @@ def _processes() -> list[Process]:
         process
         for path in Path("/proc").iterdir()
         if path.name.isdecimal()
-        if (process := _read_process(path)) is not None
+        if (process := read_process(path)) is not None
         if process.pid != os.getpid()
     ]
     return sorted(found, key=lambda process: process.pid)
