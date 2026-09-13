@@ -180,9 +180,16 @@ def _build_app(runner: Runner | None = None) -> typer.Typer:
         kubectl: KubectlBinary = "kubectl",
     ) -> None:
         kube = kubectl_for(namespace, context=context, binary=kubectl, runner=runner)
-        for line in restart_hotfix(
-            kube, pod, container=container, reinstall=reinstall, deadline=deadline
-        ):
+        message = (
+            "Synchronizing dependencies and restarting application..."
+            if reinstall
+            else "Restarting application; waiting for health checks..."
+        )
+        with console.status(message):
+            lines = restart_hotfix(
+                kube, pod, container=container, reinstall=reinstall, deadline=deadline
+            )
+        for line in lines:
             console.print(line)
 
     @app.command(name="status", help="show hotfix state in the namespace")

@@ -30,7 +30,14 @@ def _debugpy_source() -> Path | None:
     return next((c for c in candidates if (c / "__init__.py").is_file()), None)
 
 
-def inject(pid: int, start: str, port: int, state_dir: Path | None = None) -> None:
+def inject(
+    pid: int,
+    start: str,
+    port: int,
+    state_dir: Path | None = None,
+    *,
+    manage_hold: bool = True,
+) -> None:
     """Inject debugpy into the recorded process, or reuse its known listener.
 
     Successful injection keeps supervised probes held until a hotfix restart.
@@ -38,7 +45,7 @@ def inject(pid: int, start: str, port: int, state_dir: Path | None = None) -> No
     """
     proc = Path(f"/proc/{pid}")
     if process_start(pid) != start:
-        raise RuntimeError("process restarted; rerun podbench ide vscode")
+        raise RuntimeError("process changed during preparation; retry Attach")
     state = (state_dir or Path.home() / ".podbench/ide") / f"python-{pid}.json"
     state.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     if inode := listener(port):
@@ -90,7 +97,7 @@ def inject(pid: int, start: str, port: int, state_dir: Path | None = None) -> No
     gdb.chmod(0o700)
     environment["PATH"] = f"{tools}:{environment.get('PATH', '')}"
     hold = root / "tmp/podbench-hold"
-    supervised = (root / "tmp/podbench-child.pid").is_file()
+    supervised = manage_hold and (root / "tmp/podbench-child.pid").is_file()
     held = hold.exists()
     if supervised:
         hold.touch()

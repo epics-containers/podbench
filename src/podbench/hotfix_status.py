@@ -55,6 +55,8 @@ def hotfix_state(kube: Kubectl, pod: dict, container: str) -> tuple[str, bool]:
             f"test -d {HOTFIX_APP_PATH} || exit 1; "
             f"if [ -f {MANIFEST} ]; then echo initialized; "
             "else echo 'ready for init'; fi; "
+            "if [ -f /tmp/podbench-control/state ]; then "
+            "cat /tmp/podbench-control/state; else echo 'legacy wiring'; fi; "
             f"if [ -e {HOTFIX_HOLD_PATH} ]; then echo HELD; fi",
         )
     except (HotfixError, LauncherError, KubectlError, ValueError) as error:

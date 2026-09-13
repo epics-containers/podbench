@@ -29,6 +29,10 @@ def _run(argv: list[str], *, stdin: str | None = None, timeout: float = 30) -> s
 def _upload_helpers(kube: Kubectl, pod: str, seat: str) -> str:
     modules = (
         "ide_remote",
+        "ide_process",
+        "ide_prepare",
+        "ide_relay",
+        "lifecycle_client",
         "ide_launchers",
         "ide_python",
         "gdb_support",
@@ -122,6 +126,9 @@ def open_vscode(
     ssh = ["ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", wiring.alias]
     if forward_agent and not _run([*ssh, "ssh-add -l"]):
         raise KubectlError("SSH agent forwarding did not reach the seat")
+    git_identity["podbench.namespace"] = kube.exec_(
+        pod, ["readlink", "/proc/self/ns/mnt"], container=target
+    ).stdout.strip()
     result = _run(
         [*ssh, f"{helper} prepare"],
         stdin=json.dumps(git_identity),
