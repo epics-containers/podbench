@@ -21,9 +21,14 @@ state. For example:
 | `ready for init, normal` | Wiring is in place; initialize the empty claim below. |
 | `initialized, legacy wiring` | Update the wiring and roll out the pod; keep the existing checkout. |
 | `ready for init, legacy wiring` | Update the wiring and roll out the pod, then initialize the empty claim. |
+| `initialized, normal, HELD` | A probe hold is active; finish or coordinate the existing debugging session before continuing. |
 
 `ready for init` alone does not confirm that the supervisor is current. Check
 the full state even if the workload has been used for hotfix before.
+
+`HELD` can accompany other states too, such as `stopped` or `failed`. Follow
+[restart and recovery](restart-and-recover.md) to resolve the hold before
+continuing; do not delete the hold file manually.
 
 ## Generate and deploy the chart changes
 
