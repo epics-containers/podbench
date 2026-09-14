@@ -11,7 +11,7 @@ from typing import Any
 from . import __version__
 from .hotfix_core import HotfixError, find_container
 from .launcher import target_container_name, target_uid_gid
-from .lifecycle_health import health_command
+from .lifecycle_health import health_command, unwrap_probe
 from .lifecycle_supervisor import supervisor
 from .model import (
     HOTFIX_APP_PATH,
@@ -23,6 +23,18 @@ from .model import (
 RESTART_WINDOW_SECONDS = 120
 HOTFIX_CHART = "podbench-hotfix-claim"
 HOTFIX_CHART_REPOSITORY = "oci://ghcr.io/epics-containers/charts"
+SUPERVISOR_ARG = "podbench-supervisor"
+# Comment lines bracketing the generated workload keys in values.yaml, so a
+# later `hotfix enable` can find and replace its own output instead of
+# refusing or duplicating it. Only the prefix is matched; the rest records
+# which podbench wrote the block.
+MARKER_BEGIN = "# podbench-hotfix: begin"
+MARKER_END = "# podbench-hotfix: end"
+_EDITABLE_FALLBACK = re.compile(
+    rf"^if \[\[ -f {re.escape(HOTFIX_APP_PATH)}/\S+ \]\]; then\n"
+    r"  exec .*\nelse\n  exec (?P<original>.*)\nfi\n?$",
+    re.DOTALL,
+)
 
 
 def chart_version(version: str) -> str:
@@ -47,7 +59,13 @@ def claim_for(app: str) -> str:
 
 
 def entrypoint(container: Mapping[str, Any]) -> str:
-    """Quote the pod's explicit command and args; image-only entrypoints need input."""
+    """Quote the pod's explicit command and args; image-only entrypoints need input.
+
+    A pod already running a podbench supervisor reports that supervisor as its
+    command. The application command is recovered from the supervisor's
+    launch argument, so regenerating wiring never nests one supervisor in
+    another.
+    """
     command = container.get("command")
     if not isinstance(command, list) or not command:
         raise HotfixError(
@@ -58,7 +76,25 @@ def entrypoint(container: Mapping[str, Any]) -> str:
     args = container.get("args")
     if isinstance(args, list):
         words.extend(str(word) for word in args)
+    if wrapped := supervised_launch(words):
+        return wrapped
     return shlex.join(words)
+
+
+def supervised_launch(words: list[str]) -> str | None:
+    """Return the application command behind a podbench supervisor, or None.
+
+    Both supervisor generations run as ``bash -c SCRIPT podbench-supervisor
+    LAUNCH``. LAUNCH is ``exec COMMAND`` for a one-line command, or the
+    multi-line editable-checkout fallback whose ``else`` branch holds the
+    original command.
+    """
+    if len(words) != 5 or words[:2] != ["bash", "-c"] or words[3] != SUPERVISOR_ARG:
+        return None
+    launch = words[4]
+    if match := _EDITABLE_FALLBACK.match(launch):
+        return match.group("original")
+    return launch.removeprefix("exec ").strip()
 
 
 def yaml_scalar(value: str) -> str:
@@ -77,7 +113,7 @@ def _liveness(container: Mapping[str, Any]) -> tuple[list[str], dict[str, Any]] 
         # threshold is extended below instead of replacing the probe action.
         return None
     timings = {key: value for key, value in probe.items() if key != "exec"}
-    return [str(word) for word in command], timings
+    return unwrap_probe(command), timings
 
 
 def value_blocks(
@@ -147,7 +183,12 @@ def value_blocks(
             f"  failureThreshold: {max(failures, restart_failures)}",
         ]
     workload += ["podSecurityContext:", f"  fsGroup: {gid}"]
-    return claim_lines, workload
+    return claim_lines, marked(workload)
+
+
+def marked(workload: list[str]) -> list[str]:
+    """Bracket generated workload lines with the markers hotfix enable rewrites."""
+    return [f"{MARKER_BEGIN} podbench {__version__}", *workload, MARKER_END]
 
 
 def render_values(
