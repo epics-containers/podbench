@@ -1,0 +1,3 @@
+interface:
+  display_name: "Podbench hotfix E2E"
+  short_description: "Prove the hotfix lifecycle on chosen pods from the sandbox"
