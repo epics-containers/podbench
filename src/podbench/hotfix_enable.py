@@ -13,8 +13,11 @@ from .hotfix_core import HotfixError
 from .hotfix_values import (
     HOTFIX_CHART,
     HOTFIX_CHART_REPOSITORY,
+    MARKER_BEGIN,
+    MARKER_END,
     chart_version,
     entrypoint,
+    marked,
     value_blocks,
 )
 from .kubectl import Kubectl
@@ -28,6 +31,9 @@ WORKLOAD_KEYS = (
     "livenessProbe",
     "podSecurityContext",
 )
+# Keys an earlier `hotfix enable` may have written without markers. Present
+# together with a claim block, they are treated as generated and replaced.
+GENERATED_KEYS = (*WORKLOAD_KEYS, "readinessProbe", "startupProbe", "debug")
 
 
 def _pod_for(
@@ -91,9 +97,28 @@ def _prefix(values: str, override: str | None) -> str | None:
 
 
 def _dependency(chart: str) -> tuple[str, bool]:
-    if re.search(rf"(?m)^\s+- name:\s*{re.escape(HOTFIX_CHART)}\s*$", chart):
-        return chart, False
+    """Add the claim chart dependency, or pin an existing one to this version."""
     lines = chart.rstrip("\n").splitlines()
+    wanted = f'    version: "{chart_version(__version__)}"'
+    name = next(
+        (
+            i
+            for i, line in enumerate(lines)
+            if re.fullmatch(rf"\s+- name:\s*{re.escape(HOTFIX_CHART)}\s*", line)
+        ),
+        None,
+    )
+    if name is not None:
+        for index in range(name + 1, len(lines)):
+            line = lines[index]
+            if re.match(r"\s+- name:", line) or not line.startswith(" "):
+                break
+            if re.match(r"\s+version:", line):
+                if line == wanted:
+                    return chart, False
+                lines[index] = wanted
+                return "\n".join(lines) + "\n", True
+        return chart, False
     start = next((i for i, line in enumerate(lines) if line == "dependencies:"), None)
     if start is None:
         raise HotfixError("Chart.yaml has no top-level dependencies list")
@@ -105,7 +130,7 @@ def _dependency(chart: str) -> tuple[str, bool]:
             break
     block = [
         f"  - name: {HOTFIX_CHART}",
-        f'    version: "{chart_version(__version__)}"',
+        wanted,
         f'    repository: "{HOTFIX_CHART_REPOSITORY}"',
     ]
     if end and lines[end - 1]:
@@ -135,48 +160,99 @@ def _mapping_bounds(lines: list[str], key: str) -> tuple[int, int]:
     return start, end
 
 
+def _block_end(lines: list[str], start: int, end: int, indent: str) -> int:
+    """Exclusive end of the YAML block whose key sits on lines[start]."""
+    for index in range(start + 1, end):
+        line = lines[index]
+        if line and not line.startswith(f"{indent} ") and not line.startswith("#"):
+            return index
+    return end
+
+
+def _generated_span(
+    lines: list[str], start: int, end: int, indent: str
+) -> tuple[int, int] | None:
+    """Return the marked region inside lines[start:end], or None."""
+    begin = next(
+        (
+            i
+            for i in range(start, end)
+            if lines[i].startswith(f"{indent}{MARKER_BEGIN}")
+        ),
+        None,
+    )
+    if begin is None:
+        return None
+    stop = next(
+        (i for i in range(begin, end) if lines[i] == f"{indent}{MARKER_END}"), None
+    )
+    if stop is None:
+        raise HotfixError(f"values.yaml has '{MARKER_BEGIN}' without '{MARKER_END}'")
+    return begin, stop + 1
+
+
+def _generated_blocks(
+    lines: list[str], start: int, end: int, indent: str
+) -> list[tuple[int, int, str]]:
+    """Blocks of generated keys inside lines[start:end], as (start, end, key)."""
+    found = []
+    for i in range(start, end):
+        for key in GENERATED_KEYS:
+            if re.match(rf"^{indent}{re.escape(key)}:", lines[i]):
+                found.append((i, _block_end(lines, i, end, indent), key))
+    return found
+
+
 def _values(
     current: str, claim: list[str], workload: list[str], prefix: str | None
 ) -> tuple[str, bool]:
-    """Insert hotfix blocks while preserving surrounding text and refusing conflicts."""
-    if re.search(r"(?m)^podbench-hotfix-claim:\s*$", current):
-        return current, False
+    """Insert or replace hotfix blocks while preserving surrounding text.
+
+    The claim block marks a file an earlier enable has wired. With it present,
+    the generated workload is replaced in place: a marked region as one unit,
+    or, for output from a podbench that wrote no markers, each generated key
+    block where it sits, with the new marked block taking the first one's
+    place. Without a claim block, generated keys belong to the user and are
+    refused.
+    """
     lines = current.rstrip("\n").splitlines()
+    has_claim = bool(re.search(r"(?m)^podbench-hotfix-claim:\s*$", current))
+    if workload and not workload[0].startswith(MARKER_BEGIN):
+        workload = marked(workload)
+    indent = "  " if prefix else ""
     if prefix:
         start, end = _mapping_bounds(lines, prefix)
-        section = lines[start + 1 : end] if start < len(lines) else []
-        conflicts = [
-            key
-            for key in WORKLOAD_KEYS
-            if any(re.match(rf"^  {re.escape(key)}:\s*", line) for line in section)
-        ]
-        if conflicts:
-            raise HotfixError(
-                "values.yaml already sets "
-                + ", ".join(conflicts)
-                + "; use hotfix values"
-            )
-        addition = [*[f"  {line}" for line in workload], ""]
+        section = (start + 1, end) if start < len(lines) else (0, 0)
+    else:
+        start, end = 0, len(lines)
+        # Top-level layout: the claim block is not part of the workload.
+        section = (0, _mapping_bounds(lines, "podbench-hotfix-claim")[0])
+    body = [f"{indent}{line}" if line else line for line in workload]
+    span = _generated_span(lines, *section, indent)
+    blocks = [] if span else _generated_blocks(lines, *section, indent)
+    if span is not None:
+        lines[span[0] : span[1]] = body
+    elif blocks and not has_claim:
+        keys = ", ".join(dict.fromkeys(key for _, _, key in blocks))
+        raise HotfixError(f"values.yaml already sets {keys}; use hotfix values")
+    elif blocks:
+        first = blocks[0][0]
+        for block_start, block_end, _ in reversed(blocks):
+            del lines[block_start:block_end]
+        lines[first:first] = body
+    elif prefix:
+        addition = [*body, ""]
         if start == len(lines):
             addition.insert(0, f"{prefix}:")
         elif end and lines[end - 1]:
             addition.insert(0, "")
         lines[end:end] = addition
     else:
-        conflicts = [
-            key
-            for key in WORKLOAD_KEYS
-            if re.search(rf"(?m)^{re.escape(key)}:\s*", current)
-        ]
-        if conflicts:
-            raise HotfixError(
-                "values.yaml already sets "
-                + ", ".join(conflicts)
-                + "; use hotfix values"
-            )
-        lines += ["", *workload]
-    lines += ["", *claim]
-    return "\n".join(lines).lstrip("\n") + "\n", True
+        lines += ["", *body]
+    if not has_claim:
+        lines += ["", *claim]
+    new = "\n".join(lines).lstrip("\n").rstrip("\n") + "\n"
+    return new, new != current
 
 
 def enable(

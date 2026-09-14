@@ -2,18 +2,40 @@
 
 from __future__ import annotations
 
+import re
 import shlex
 from collections.abc import Mapping
 from typing import Any
 
 from .model import HOTFIX_HOLD_PATH
 
+_HOLD_GUARD = re.compile(
+    rf"^\[ -e {re.escape(HOTFIX_HOLD_PATH)} \] && exit 0; exec (.+)$", re.DOTALL
+)
+
+
+def unwrap_probe(command: list[Any]) -> list[str]:
+    """Return the probe command a previous podbench run wrapped in a hold guard.
+
+    Generated probes take the form ``bash -c "[ -e HOLD ] && exit 0; exec X"``.
+    Reading the pod back must recover ``X``, or each regeneration wraps the
+    guard around the previous one.
+    """
+    words = [str(word) for word in command]
+    if len(words) == 3 and words[:2] == ["bash", "-c"]:
+        if match := _HOLD_GUARD.match(words[2]):
+            return shlex.split(match.group(1))
+    return words
+
 
 def health_command(container: Mapping[str, Any]) -> str:
     probe = container.get("readinessProbe") or container.get("livenessProbe") or {}
     if command := probe.get("exec", {}).get("command"):
         return shlex.join(
-            [part.replace(HOTFIX_HOLD_PATH, "/proc/self/no-hold") for part in command]
+            [
+                part.replace(HOTFIX_HOLD_PATH, "/proc/self/no-hold")
+                for part in unwrap_probe(command)
+            ]
         )
     if http := probe.get("httpGet"):
         port = _port(container, http["port"])
