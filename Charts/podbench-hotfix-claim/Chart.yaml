@@ -1,6 +1,6 @@
 apiVersion: v2
 name: podbench-hotfix-claim
-description: One persistent hotfix claim per workload release
+description: Persistent hotfix claim and shared Bash runtime per workload release
 type: application
 version: 0.1.0
 appVersion: "0.1.0"

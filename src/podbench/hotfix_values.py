@@ -12,7 +12,7 @@ from . import __version__
 from .hotfix_core import HotfixError, find_container
 from .launcher import target_container_name, target_uid_gid
 from .lifecycle_health import health_command, unwrap_probe
-from .lifecycle_supervisor import supervisor
+from .lifecycle_supervisor import runtime_mounts, runtime_volumes, supervisor
 from .model import (
     HOTFIX_APP_PATH,
     HOTFIX_CLAIM_VOLUME,
@@ -81,10 +81,19 @@ def entrypoint(container: Mapping[str, Any]) -> str:
     return shlex.join(words)
 
 
+def ioc_entrypoint(pod: Mapping[str, Any], container: str | None) -> str:
+    """Supply the IOC chart's checkout path to the generic script helper."""
+    chosen = target_container_name(pod, container)
+    original = entrypoint(find_container(pod, chosen))
+    if original.startswith("podbench_script "):
+        return original
+    return f"podbench_script {HOTFIX_APP_PATH}/ioc/start.sh {original}"
+
+
 def supervised_launch(words: list[str]) -> str | None:
     """Return the application command behind a podbench supervisor, or None.
 
-    Both supervisor generations run as ``bash -c SCRIPT podbench-supervisor
+    Inline and mounted supervisors run as ``bash -c SCRIPT podbench-supervisor
     LAUNCH``. LAUNCH is ``exec COMMAND`` for a one-line command, or the
     multi-line editable-checkout fallback whose ``else`` branch holds the
     original command.
@@ -139,7 +148,11 @@ def value_blocks(
         "  enabled: true",
         f"  size: {size}",
     ]
-    launch = command if "\n" in command else f"exec {command}"
+    launch = (
+        command
+        if "\n" in command or command.startswith("podbench_")
+        else f"exec {command}"
+    )
     launch_lines = (
         ["  - |", *[f"    {line}" for line in launch.splitlines()]]
         if "\n" in launch
@@ -153,13 +166,14 @@ def value_blocks(
         f"  - name: {HOTFIX_CLAIM_VOLUME}",
         "    persistentVolumeClaim:",
         f"      claimName: {claim}",
+        *runtime_volumes(app),
         "volumeMounts:",
         f"  - name: {HOTFIX_CLAIM_VOLUME}",
         f"    mountPath: {HOTFIX_APP_PATH}",
+        *runtime_mounts(),
         "command: [bash, -c]",
         "args:",
-        "  - |",
-        *[f"    {line}" for line in supervisor(health=health, safe=safe).splitlines()],
+        f"  - {json.dumps(supervisor(health=health, safe=safe))}",
         "  - podbench-supervisor",
         *launch_lines,
     ]

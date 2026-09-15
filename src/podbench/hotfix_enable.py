@@ -16,12 +16,12 @@ from .hotfix_values import (
     MARKER_BEGIN,
     MARKER_END,
     chart_version,
-    entrypoint,
+    ioc_entrypoint,
     marked,
     value_blocks,
 )
 from .kubectl import Kubectl
-from .model import HOTFIX_APP_PATH, as_dict
+from .model import as_dict
 
 WORKLOAD_KEYS = (
     "volumes",
@@ -67,24 +67,6 @@ def _pod_for(
             f"expected one live pod with label app={app}, {found}; pass --from-pod"
         )
     return matches[0]
-
-
-def _ioc_command(pod: dict[str, Any], container: str | None) -> str:
-    from .hotfix_core import find_container
-    from .launcher import target_container_name
-
-    chosen = target_container_name(pod, container)
-    original = entrypoint(find_container(pod, chosen))
-    editable = f"{HOTFIX_APP_PATH}/ioc/start.sh"
-    return "\n".join(
-        [
-            f"if [[ -f {editable} ]]; then",
-            f"  exec bash {editable}",
-            "else",
-            f"  exec {original}",
-            "fi",
-        ]
-    )
 
 
 def _prefix(values: str, override: str | None) -> str | None:
@@ -283,7 +265,7 @@ def enable(
         container or ("blueapi" if prefix == "blueapi" else None),
     )
     if command is None and prefix == "ioc-instance":
-        command = _ioc_command(pod, container)
+        command = ioc_entrypoint(pod, container)
     claim = [
         "podbench-hotfix-claim:",
         "  enabled: true",
