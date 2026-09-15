@@ -80,10 +80,32 @@ hold; generic HTTP checks need `curl` and gRPC checks need `grpc_health_probe`
 in the application image.
 
 For an IOC the equivalent service directory is `services/bl47p-mo-ioc-01` and
-container `bl47p-mo-ioc-01`. Existing `volumes` and `volumeMounts` lists keep
-their entries and gain the generated ones. Other wiring keys the service already
-sets, such as `command`, `args` or probes, are replaced by the generated block;
-pass `--entrypoint` when the original command must be kept.
+container `bl47p-mo-ioc-01`. Podbench shares `volumes` and `volumeMounts` with
+the service, marking only its own entries:
+
+```yaml
+volumes:
+  - name: service-data
+    emptyDir: {}
+  # podbench: begin volumes
+  - name: podbench-app
+    persistentVolumeClaim:
+      claimName: example-podbench-project
+  # podbench: end volumes
+```
+
+Re-running `enable` replaces the marked entries and preserves service entries
+and comments outside the markers. Nested mappings are shared too: a marked
+`fsGroup` can change without removing `runAsUser`. Readiness and startup settings
+remain unless the selected adapter explicitly supplies replacements. `command`
+and `args` are replaced with the generated startup wiring; use `--entrypoint`
+to specify the application command.
+
+Recognizable older Podbench wiring migrates to these markers. An unmarked entry
+with a conflicting name, or malformed markers, stops the edit before either
+chart file is written. Resolve the conflict in the service chart and rerun.
+The first edit may normalize YAML indentation; quotes and service comments are
+retained. Keep service additions outside the marked regions.
 
 :::{admonition} Other charts or conflicting values
 Print the wiring for manual integration:

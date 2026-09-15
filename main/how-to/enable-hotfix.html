@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Prepare a workload for hotfix &#8212; podbench 0.21.1.dev16+g1ca50c697 documentation</title>
+    <title>Prepare a workload for hotfix &#8212; podbench 0.21.1.dev21+g663f7c611 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=acfadade"></script>
+    <script src="../_static/documentation_options.js?v=fed630ca"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -574,10 +574,29 @@ Readiness remains active. Start checks configured health before releasing its
 hold; generic HTTP checks need <code class="docutils literal notranslate"><span class="pre">curl</span></code> and gRPC checks need <code class="docutils literal notranslate"><span class="pre">grpc_health_probe</span></code>
 in the application image.</p>
 <p>For an IOC the equivalent service directory is <code class="docutils literal notranslate"><span class="pre">services/bl47p-mo-ioc-01</span></code> and
-container <code class="docutils literal notranslate"><span class="pre">bl47p-mo-ioc-01</span></code>. Existing <code class="docutils literal notranslate"><span class="pre">volumes</span></code> and <code class="docutils literal notranslate"><span class="pre">volumeMounts</span></code> lists keep
-their entries and gain the generated ones. Other wiring keys the service already
-sets, such as <code class="docutils literal notranslate"><span class="pre">command</span></code>, <code class="docutils literal notranslate"><span class="pre">args</span></code> or probes, are replaced by the generated block;
-pass <code class="docutils literal notranslate"><span class="pre">--entrypoint</span></code> when the original command must be kept.</p>
+container <code class="docutils literal notranslate"><span class="pre">bl47p-mo-ioc-01</span></code>. Podbench shares <code class="docutils literal notranslate"><span class="pre">volumes</span></code> and <code class="docutils literal notranslate"><span class="pre">volumeMounts</span></code> with
+the service, marking only its own entries:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service-data</span>
+<span class="w">    </span><span class="nt">emptyDir</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">  </span><span class="c1"># podbench: begin volumes</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">podbench-app</span>
+<span class="w">    </span><span class="nt">persistentVolumeClaim</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">claimName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example-podbench-project</span>
+<span class="w">  </span><span class="c1"># podbench: end volumes</span>
+</pre></div>
+</div>
+<p>Re-running <code class="docutils literal notranslate"><span class="pre">enable</span></code> replaces the marked entries and preserves service entries
+and comments outside the markers. Nested mappings are shared too: a marked
+<code class="docutils literal notranslate"><span class="pre">fsGroup</span></code> can change without removing <code class="docutils literal notranslate"><span class="pre">runAsUser</span></code>. Readiness and startup settings
+remain unless the selected adapter explicitly supplies replacements. <code class="docutils literal notranslate"><span class="pre">command</span></code>
+and <code class="docutils literal notranslate"><span class="pre">args</span></code> are replaced with the generated startup wiring; use <code class="docutils literal notranslate"><span class="pre">--entrypoint</span></code>
+to specify the application command.</p>
+<p>Recognizable older Podbench wiring migrates to these markers. An unmarked entry
+with a conflicting name, or malformed markers, stops the edit before either
+chart file is written. Resolve the conflict in the service chart and rerun.
+The first edit may normalize YAML indentation; quotes and service comments are
+retained. Keep service additions outside the marked regions.</p>
 <div class="admonition-other-charts-or-conflicting-values admonition">
 <p class="admonition-title">Other charts or conflicting values</p>
 <p>Print the wiring for manual integration:</p>
