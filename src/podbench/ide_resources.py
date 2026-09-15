@@ -13,9 +13,11 @@ from .kubectl import Kubectl, KubectlError
 from .model import as_dict
 
 BASELINE = "podbench.io/ide-resources"
+# A modest guaranteed floor that fits a small beamline node and namespace quota,
+# with a burst ceiling for language servers, debuggers and builds.
 HEADROOM = {
-    "requests": {"cpu": "2", "memory": "4Gi"},
-    "limits": {"cpu": "4", "memory": "8Gi"},
+    "requests": {"cpu": "500m", "memory": "1Gi"},
+    "limits": {"cpu": "2", "memory": "4Gi"},
 }
 
 
