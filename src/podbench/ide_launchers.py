@@ -122,6 +122,17 @@ def python_invocation(process: dict) -> dict:
     }
 
 
+def architecture(executable: Path) -> str | None:
+    """Name cppdbg's targetArchitecture from the ELF machine field."""
+    try:
+        with executable.open("rb") as stream:
+            header = stream.read(20)
+    except OSError:
+        return None
+    # cppdbg cannot map GDB's "i386:x86-64" itself and refuses to start.
+    return {62: "x64", 183: "arm64"}.get(int.from_bytes(header[18:20], "little"))
+
+
 def launchers(base: Path, folder: Path, home: Path) -> tuple[list, list, set, list]:
     configurations, tasks, extensions, warnings = [], [], set(), []
     root = Path((base / "target").read_text()) if (base / "target").exists() else None
@@ -217,6 +228,8 @@ def launchers(base: Path, folder: Path, home: Path) -> tuple[list, list, set, li
                 "cwd": str(home),
                 "sourceFileMap": source_map,
             }
+            if arch := architecture(Path(f"/proc/{process['pid']}/exe")):
+                native["targetArchitecture"] = arch
             # Use customizable launch to attach without cppdbg's elevation prompt.
             configurations.append(
                 {
