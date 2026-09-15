@@ -117,7 +117,7 @@ ENV PATH=/app/.venv/bin:$PATH
 
 # debugpy for `podbench ide vscode`: the seat runs debugpy's attach-to-pid with
 # its own interpreter and copies this directory into the target's /tmp. It stays
-# outside the venv so the podbench wheel keeps its two runtime dependencies.
+# outside the venv so debugpy is not a dependency of the workstation CLI.
 RUN uv pip install --python /app/.venv/bin/python \
     --target /opt/podbench/debugpy debugpy==1.8.21
 

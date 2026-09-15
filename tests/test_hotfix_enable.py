@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from podbench import __version__
 from podbench.hotfix_enable import _dependency, _values
 from podbench.hotfix_values import (
-    MARKER_BEGIN,
-    MARKER_END,
     entrypoint,
     supervised_launch,
 )
+from podbench.hotfix_yaml import load
 from podbench.lifecycle_health import unwrap_probe
 
 CLAIM = ["podbench-hotfix-claim:", "  enabled: true", "  size: 10Gi"]
+MARKER_BEGIN = "# podbench: begin args"
+MARKER_END = "# podbench: end args"
 WORKLOAD_V1 = [
     "command: [bash, -c]",
     "args:",
@@ -68,7 +68,7 @@ def test_fresh_insert_adds_markers_and_claim() -> None:
         "ioc-instance:\n  image: x\n", CLAIM, WORKLOAD_V1, "ioc-instance"
     )
     assert changed
-    assert f"  {MARKER_BEGIN} podbench {__version__}" in text
+    assert f"  {MARKER_BEGIN}" in text
     assert f"  {MARKER_END}" in text
     assert text.endswith("podbench-hotfix-claim:\n  enabled: true\n  size: 10Gi\n")
     assert (
@@ -197,5 +197,5 @@ def test_legacy_upgrade_keeps_user_keys_between_generated_blocks() -> None:
     text, changed = _values(current, CLAIM, WORKLOAD_V2, "blueapi")
     assert changed
     assert "  ingress:\n    enabled: true\n" in text
-    assert "  debug:" not in text.split(MARKER_END)[1]
+    assert load(text)["blueapi"]["debug"] == {"enabled": False}
     assert text.count("podbench-app") == 0 or "  - new" in text

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any
+
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
 from . import __version__
 from .hotfix_blueapi import workload as blueapi_workload
@@ -17,25 +19,21 @@ from .hotfix_values import (
     MARKER_END,
     chart_version,
     ioc_entrypoint,
-    marked,
     value_blocks,
+)
+from .hotfix_yaml import (
+    LISTS,
+    detached,
+    dump,
+    load,
+    mapping,
+    mark,
+    merge,
+    remove_entries,
+    unmark,
 )
 from .kubectl import Kubectl
 from .model import as_dict
-
-WORKLOAD_KEYS = (
-    "volumes",
-    "volumeMounts",
-    "command",
-    "args",
-    "livenessProbe",
-    "podSecurityContext",
-)
-# Keys an earlier `hotfix enable` may have written without markers, or that a
-# service sets itself. Lists keep the service's entries and gain the generated
-# ones; every other key is wiring and is replaced.
-GENERATED_KEYS = (*WORKLOAD_KEYS, "readinessProbe", "startupProbe", "debug")
-LIST_KEYS = ("volumes", "volumeMounts")
 
 
 def _pod_for(
@@ -64,9 +62,9 @@ def _pod_for(
     if len(matches) != 1:
         names = ", ".join(str(as_dict(p.get("metadata")).get("name")) for p in matches)
         detail = f": {names}" if names else ""
-        found = f"found {len(matches)}{detail}"
         raise HotfixError(
-            f"expected one live pod with label app={app}, {found}; pass --from-pod"
+            f"expected one live pod with label app={app}, "
+            f"found {len(matches)}{detail}; pass --from-pod"
         )
     return matches[0]
 
@@ -74,201 +72,133 @@ def _pod_for(
 def _prefix(values: str, override: str | None) -> str | None:
     if override is not None:
         return override
-    for key in ("ioc-instance", "blueapi"):
-        if re.search(rf"(?m)^{key}:\s*(?:#.*)?$", values):
-            return key
-    return None
+    document = load(values)
+    return next((key for key in ("ioc-instance", "blueapi") if key in document), None)
 
 
 def _dependency(chart: str) -> tuple[str, bool]:
-    """Add the claim chart dependency, or pin an existing one to this version."""
-    lines = chart.rstrip("\n").splitlines()
-    wanted = f'    version: "{chart_version(__version__)}"'
-    name = next(
-        (
-            i
-            for i, line in enumerate(lines)
-            if re.fullmatch(rf"\s+- name:\s*{re.escape(HOTFIX_CHART)}\s*", line)
-        ),
-        None,
-    )
-    if name is not None:
-        for index in range(name + 1, len(lines)):
-            line = lines[index]
-            if re.match(r"\s+- name:", line) or not line.startswith(" "):
-                break
-            if re.match(r"\s+version:", line):
-                if line == wanted:
-                    return chart, False
-                lines[index] = wanted
-                return "\n".join(lines) + "\n", True
-        return chart, False
-    start = next((i for i, line in enumerate(lines) if line == "dependencies:"), None)
-    if start is None:
+    document = load(chart)
+    dependencies = document.get("dependencies")
+    if not isinstance(dependencies, CommentedSeq):
         raise HotfixError("Chart.yaml has no top-level dependencies list")
-    end = len(lines)
-    for index in range(start + 1, len(lines)):
-        line = lines[index]
-        if line and not line[0].isspace() and not line.startswith("#"):
-            end = index
-            break
-    block = [
-        f"  - name: {HOTFIX_CHART}",
-        wanted,
-        f'    repository: "{HOTFIX_CHART_REPOSITORY}"',
-    ]
-    if end and lines[end - 1]:
-        block.insert(0, "")
-    lines[end:end] = block
-    return "\n".join(lines) + "\n", True
-
-
-def _mapping_bounds(lines: list[str], key: str) -> tuple[int, int]:
-    """Find a top-level block's start and exclusive end, or EOF when absent."""
-    start = next(
-        (
-            i
-            for i, line in enumerate(lines)
-            if re.fullmatch(rf"{re.escape(key)}:\s*(?:#.*)?", line)
-        ),
-        None,
-    )
-    if start is None:
-        return len(lines), len(lines)
-    end = len(lines)
-    for index in range(start + 1, len(lines)):
-        line = lines[index]
-        if line and not line[0].isspace() and not line.startswith("#"):
-            end = index
-            break
-    return start, end
-
-
-def _block_end(lines: list[str], start: int, end: int, indent: str) -> int:
-    """Exclusive end of the YAML block whose key sits on lines[start]."""
-    for index in range(start + 1, end):
-        line = lines[index]
-        if line and not line.startswith(f"{indent} ") and not line.startswith("#"):
-            return index
-    return end
-
-
-def _generated_span(
-    lines: list[str], start: int, end: int, indent: str
-) -> tuple[int, int] | None:
-    """Return the marked region inside lines[start:end], or None."""
-    begin = next(
-        (
-            i
-            for i in range(start, end)
-            if lines[i].startswith(f"{indent}{MARKER_BEGIN}")
-        ),
-        None,
-    )
-    if begin is None:
-        return None
-    stop = next(
-        (i for i in range(begin, end) if lines[i] == f"{indent}{MARKER_END}"), None
-    )
-    if stop is None:
-        raise HotfixError(f"values.yaml has '{MARKER_BEGIN}' without '{MARKER_END}'")
-    return begin, stop + 1
-
-
-def _generated_blocks(
-    lines: list[str], start: int, end: int, indent: str
-) -> list[tuple[int, int, str]]:
-    """Blocks of generated keys inside lines[start:end], as (start, end, key)."""
-    found = []
-    for i in range(start, end):
-        for key in GENERATED_KEYS:
-            if re.match(rf"^{indent}{re.escape(key)}:", lines[i]):
-                found.append((i, _block_end(lines, i, end, indent), key))
-    return found
-
-
-def _absorb(
-    lines: list[str], block: tuple[int, int, str], body: list[str], indent: str
-) -> None:
-    """Move the generated items of one list key into the list already present."""
-    start, end, key = block
-    while end > start and not lines[end - 1].strip():
-        end -= 1
-    present = {m[1] for line in lines[start:end] if (m := _NAMED.search(line))}
-    mine = next((i for i, line in enumerate(body) if line == f"{indent}{key}:"), None)
-    if mine is None:
-        return
-    stop = _block_end(body, mine, len(body), indent)
-    items, wanted = body[mine + 1 : stop], True
-    del body[mine:stop]
-    for line in items:
-        if line.startswith(f"{indent}  - "):
-            wanted = (m := _NAMED.search(line)) is None or m[1] not in present
-        if wanted:
-            lines.insert(end, line)
-            end += 1
-
-
-_NAMED = re.compile(r"^\s*- name: (\S+)")
+    if any(not isinstance(item, CommentedMap) for item in dependencies):
+        raise HotfixError("Chart.yaml dependencies must be mappings")
+    matching = [item for item in dependencies if item.get("name") == HOTFIX_CHART]
+    if len(matching) > 1:
+        raise HotfixError("duplicate podbench-hotfix-claim dependencies")
+    wanted = DoubleQuotedScalarString(chart_version(__version__))
+    if matching:
+        if matching[0].get("version") == wanted:
+            return chart, False
+        matching[0]["version"] = wanted
+    else:
+        dependencies.append(
+            CommentedMap(
+                name=HOTFIX_CHART,
+                version=wanted,
+                repository=DoubleQuotedScalarString(HOTFIX_CHART_REPOSITORY),
+            )
+        )
+    return dump(document), True
 
 
 def _values(
     current: str, claim: list[str], workload: list[str], prefix: str | None
 ) -> tuple[str, bool]:
-    """Insert or replace hotfix blocks while preserving surrounding text.
-
-    A marked region from an earlier enable is replaced as one unit. Generated
-    keys found outside it, whether written by a podbench that used no markers
-    or by the service itself, are handled per key: `volumes` and `volumeMounts`
-    keep their entries and gain the generated ones, and any other key is
-    replaced by the new marked block, which takes the first one's place.
-    """
-    lines = current.rstrip("\n").splitlines()
-    has_claim = bool(re.search(r"(?m)^podbench-hotfix-claim:\s*$", current))
-    if workload and not workload[0].startswith(MARKER_BEGIN):
-        workload = marked(workload)
-    indent = "  " if prefix else ""
-
-    def section() -> tuple[int, int]:
-        if prefix:
-            start, end = _mapping_bounds(lines, prefix)
-            return (start + 1, end) if start < len(lines) else (0, 0)
-        # Top-level layout: the claim block is not part of the workload.
-        return 0, _mapping_bounds(lines, "podbench-hotfix-claim")[0]
-
-    body = [f"{indent}{line}" if line else line for line in workload]
-    span = _generated_span(lines, *section(), indent)
-    if span is not None:
-        del lines[span[0] : span[1]]
-    for key in LIST_KEYS:
-        blocks = [
-            b for b in _generated_blocks(lines, *section(), indent) if b[2] == key
-        ]
-        if blocks:
-            _absorb(lines, blocks[0], body, indent)
-    blocks = [
-        b for b in _generated_blocks(lines, *section(), indent) if b[2] not in LIST_KEYS
-    ]
-    for block_start, block_end, _ in reversed(blocks):
-        del lines[block_start:block_end]
-    if span is not None:
-        lines[span[0] : span[0]] = body
-    elif blocks:
-        lines[blocks[0][0] : blocks[0][0]] = body
-    elif prefix:
-        start, end = _mapping_bounds(lines, prefix)
-        addition = [*body, ""]
-        if start == len(lines):
-            addition.insert(0, f"{prefix}:")
-        elif end and lines[end - 1]:
-            addition.insert(0, "")
-        lines[end:end] = addition
-    else:
-        lines += ["", *body]
-    if not has_claim:
-        lines += ["", *claim]
-    new = "\n".join(lines).lstrip("\n").rstrip("\n") + "\n"
+    load(current)  # Reject invalid/duplicate YAML before processing ownership.
+    clean, legacy = unmark(current, prefix)
+    document = load(clean)
+    document.fa.set_block_style()
+    target = mapping(document, prefix) if prefix else document
+    if prefix:
+        target = document[prefix] = detached(target)
+    if entries := migrate_lists(target, legacy):
+        for key in {key for key, _ in entries}:
+            target[key] = detached(target[key])
+            target[key].fa.set_block_style()
+        document = load(remove_entries(dump(document), prefix, entries))
+        target = mapping(document, prefix) if prefix else document
+    patch = load(
+        "\n".join(
+            line for line in workload if not line.startswith((MARKER_BEGIN, MARKER_END))
+        )
+    )
+    owned = []
+    merge(target, patch, owned)
+    if HOTFIX_CHART not in document:
+        document.update(load("\n".join(claim)))
+    if not prefix:
+        document.move_to_end(HOTFIX_CHART)
+    new = mark(dump(document), prefix, owned)
+    load(new)  # Never write an invalid generated document.
     return new, new != current
+
+
+def migrate_lists(target: CommentedMap, marked: bool) -> list[tuple[str, int]]:
+    """Adopt only recognizable old entries in demonstrably generated wiring."""
+    args = target.get("args", [])
+    mounts = target.get("volumeMounts") or []
+    supervised = (
+        target.get("command") == ["bash", "-c"]
+        and isinstance(args, list)
+        and len(args) == 3
+        and args[1] == "podbench-supervisor"
+    )
+    wrapper = {
+        "name": "podbench-wrapper",
+        "mountPath": "/app/.venv/bin/blueapi",
+        "subPath": "blueapi",
+    }
+    if not (marked or supervised or wrapper in mounts):
+        return []
+    owned = []
+    for key in LISTS:
+        entries = target.get(key)
+        if not isinstance(entries, CommentedSeq):
+            continue
+        for index in reversed(range(len(entries))):
+            entry = entries[index]
+            if not isinstance(entry, dict):
+                continue
+            name = entry.get("name")
+            known = (
+                entry
+                in (
+                    {"name": "podbench-app", "mountPath": "/podbench/app"},
+                    {
+                        "name": "podbench-runtime",
+                        "mountPath": "/podbench/runtime",
+                        "readOnly": True,
+                    },
+                    wrapper,
+                )
+                if key == "volumeMounts"
+                else False
+            )
+            if key == "volumes" and name in (
+                "podbench-app",
+                "podbench-runtime",
+                "podbench-wrapper",
+            ):
+                field = (
+                    "persistentVolumeClaim" if name == "podbench-app" else "configMap"
+                )
+                config = entry.get(field, {})
+                if not isinstance(config, dict):
+                    continue
+                reference = "claimName" if name == "podbench-app" else "name"
+                suffix = "-podbench-project" if name == "podbench-app" else f"-{name}"
+                expected = {reference: config.get(reference)}
+                if name == "podbench-wrapper":
+                    expected["defaultMode"] = 755
+                known = (
+                    set(entry) == {"name", field}
+                    and config == expected
+                    and str(config.get(reference, "")).endswith(suffix)
+                )
+            if known:
+                owned.append((key, index))
+    return owned
 
 
 def enable(
@@ -300,11 +230,7 @@ def enable(
     )
     if command is None and prefix == "ioc-instance":
         command = ioc_entrypoint(pod, container)
-    claim = [
-        "podbench-hotfix-claim:",
-        "  enabled: true",
-        f"  size: {size}",
-    ]
+    claim = ["podbench-hotfix-claim:", "  enabled: true", f"  size: {size}"]
     if prefix == "blueapi" and command is None:
         workload = blueapi_workload(pod, release, container, gid)
     else:
