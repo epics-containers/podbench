@@ -45,15 +45,19 @@ git diff
 
 The command edits the local service chart; it does not deploy it. It derives the
 live identity and entrypoint, adds the claim dependency and workload values, and
-writes the BlueAPI wrapper template. Review all generated files, including new
-ones shown by `git status --short`, then deploy through the beamline's normal
+writes a small entrypoint wrapper for BlueAPI. The dependency supplies the shared
+Bash functions in a ConfigMap mounted at `/podbench/runtime`; application arguments
+contain only the invocation, never the supervisor implementation. Review all
+generated files, including new ones shown by `git status --short`, then deploy through the beamline's normal
 review and GitOps process. Wait for the replacement pod to become ready before
 continuing. Keep the workload at one replica.
 
-A wrapper-only ConfigMap update may not trigger a rollout. BlueAPI mounts the
-wrapper through `subPath`, so the existing container retains its old file. If
-GitOps has deployed the new ConfigMap but status still says `legacy wiring`,
-arrange an interruption window and replace the pod through a rollout:
+Re-run `hotfix enable` to replace older inline wiring and update the dependency
+version, then refresh your chart dependencies and deploy. Runtime-only ConfigMap
+updates may not trigger a rollout: the running supervisor has already loaded its
+functions, and BlueAPI also mounts its entrypoint through `subPath`. After GitOps
+deploys a runtime update, arrange an interruption window and replace the pod
+through a rollout:
 
 ```bash
 kubectl rollout restart statefulset/p47-blueapi
@@ -76,9 +80,10 @@ hold; generic HTTP checks need `curl` and gRPC checks need `grpc_health_probe`
 in the application image.
 
 For an IOC the equivalent service directory is `services/bl47p-mo-ioc-01` and
-container `bl47p-mo-ioc-01`. Existing values such as `volumes` or `volumeMounts`
-can conflict with generated values. In that case, use `hotfix values` and merge
-the settings with the existing lists instead of replacing them.
+container `bl47p-mo-ioc-01`. Existing `volumes` and `volumeMounts` lists keep
+their entries and gain the generated ones. Other wiring keys the service already
+sets, such as `command`, `args` or probes, are replaced by the generated block;
+pass `--entrypoint` when the original command must be kept.
 
 :::{admonition} Other charts or conflicting values
 Print the wiring for manual integration:
@@ -93,6 +98,29 @@ stay at the top level. Use `--entrypoint 'COMMAND'` when the original command do
 not select code under `/podbench/app`. Review and deploy the dependency and values
 using your chart's normal process.
 :::
+
+## Other application entrypoints
+
+The same Bash supervisor runs Python, shell scripts, and native executables.
+It inherits the container's environment, working directory, user and umask.
+Bash and `setsid` must be present in the application image; the supervisor does
+not need Python or Podbench installed there.
+
+Use `--entrypoint 'COMMAND'` to choose how the application starts. A command
+normally runs unchanged. Two shared functions select an initialized checkout:
+
+```bash
+# Keep the original interpreter until the checkout's Python environment exists.
+podbench_python /opt/app/.venv/bin/python -m myapp serve
+
+# Run an editable Bash startup script when present; otherwise run the original command.
+podbench_script /podbench/app/start.sh bash /opt/app/start.sh
+```
+
+Pass the entire function call as `--entrypoint`. For a native executable, pass
+its command and arguments directly. Building native code remains your project's
+responsibility. The IOC and BlueAPI chart adapters supply their known startup
+paths; other application layouts use the same runtime with explicit paths.
 
 ## Initialize an empty claim
 

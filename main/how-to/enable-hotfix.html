@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Prepare a workload for hotfix &#8212; podbench 0.21.1.dev4+g37f09ff2b documentation</title>
+    <title>Prepare a workload for hotfix &#8212; podbench 0.21.1.dev11+g3133dbbf9 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=074fe278"></script>
+    <script src="../_static/documentation_options.js?v=e7c97a47"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -545,14 +545,18 @@ git<span class="w"> </span>diff
 </div>
 <p>The command edits the local service chart; it does not deploy it. It derives the
 live identity and entrypoint, adds the claim dependency and workload values, and
-writes the BlueAPI wrapper template. Review all generated files, including new
-ones shown by <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">status</span> <span class="pre">--short</span></code>, then deploy through the beamline’s normal
+writes a small entrypoint wrapper for BlueAPI. The dependency supplies the shared
+Bash functions in a ConfigMap mounted at <code class="docutils literal notranslate"><span class="pre">/podbench/runtime</span></code>; application arguments
+contain only the invocation, never the supervisor implementation. Review all
+generated files, including new ones shown by <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">status</span> <span class="pre">--short</span></code>, then deploy through the beamline’s normal
 review and GitOps process. Wait for the replacement pod to become ready before
 continuing. Keep the workload at one replica.</p>
-<p>A wrapper-only ConfigMap update may not trigger a rollout. BlueAPI mounts the
-wrapper through <code class="docutils literal notranslate"><span class="pre">subPath</span></code>, so the existing container retains its old file. If
-GitOps has deployed the new ConfigMap but status still says <code class="docutils literal notranslate"><span class="pre">legacy</span> <span class="pre">wiring</span></code>,
-arrange an interruption window and replace the pod through a rollout:</p>
+<p>Re-run <code class="docutils literal notranslate"><span class="pre">hotfix</span> <span class="pre">enable</span></code> to replace older inline wiring and update the dependency
+version, then refresh your chart dependencies and deploy. Runtime-only ConfigMap
+updates may not trigger a rollout: the running supervisor has already loaded its
+functions, and BlueAPI also mounts its entrypoint through <code class="docutils literal notranslate"><span class="pre">subPath</span></code>. After GitOps
+deploys a runtime update, arrange an interruption window and replace the pod
+through a rollout:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>statefulset/p47-blueapi
 kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>statefulset/p47-blueapi
 podbench<span class="w"> </span>status
@@ -570,9 +574,10 @@ Readiness remains active. Start checks configured health before releasing its
 hold; generic HTTP checks need <code class="docutils literal notranslate"><span class="pre">curl</span></code> and gRPC checks need <code class="docutils literal notranslate"><span class="pre">grpc_health_probe</span></code>
 in the application image.</p>
 <p>For an IOC the equivalent service directory is <code class="docutils literal notranslate"><span class="pre">services/bl47p-mo-ioc-01</span></code> and
-container <code class="docutils literal notranslate"><span class="pre">bl47p-mo-ioc-01</span></code>. Existing values such as <code class="docutils literal notranslate"><span class="pre">volumes</span></code> or <code class="docutils literal notranslate"><span class="pre">volumeMounts</span></code>
-can conflict with generated values. In that case, use <code class="docutils literal notranslate"><span class="pre">hotfix</span> <span class="pre">values</span></code> and merge
-the settings with the existing lists instead of replacing them.</p>
+container <code class="docutils literal notranslate"><span class="pre">bl47p-mo-ioc-01</span></code>. Existing <code class="docutils literal notranslate"><span class="pre">volumes</span></code> and <code class="docutils literal notranslate"><span class="pre">volumeMounts</span></code> lists keep
+their entries and gain the generated ones. Other wiring keys the service already
+sets, such as <code class="docutils literal notranslate"><span class="pre">command</span></code>, <code class="docutils literal notranslate"><span class="pre">args</span></code> or probes, are replaced by the generated block;
+pass <code class="docutils literal notranslate"><span class="pre">--entrypoint</span></code> when the original command must be kept.</p>
 <div class="admonition-other-charts-or-conflicting-values admonition">
 <p class="admonition-title">Other charts or conflicting values</p>
 <p>Print the wiring for manual integration:</p>
@@ -585,6 +590,26 @@ stay at the top level. Use <code class="docutils literal notranslate"><span clas
 not select code under <code class="docutils literal notranslate"><span class="pre">/podbench/app</span></code>. Review and deploy the dependency and values
 using your chart’s normal process.</p>
 </div>
+</section>
+<section id="other-application-entrypoints">
+<h2>Other application entrypoints<a class="headerlink" href="#other-application-entrypoints" title="Link to this heading">#</a></h2>
+<p>The same Bash supervisor runs Python, shell scripts, and native executables.
+It inherits the container’s environment, working directory, user and umask.
+Bash and <code class="docutils literal notranslate"><span class="pre">setsid</span></code> must be present in the application image; the supervisor does
+not need Python or Podbench installed there.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">--entrypoint</span> <span class="pre">'COMMAND'</span></code> to choose how the application starts. A command
+normally runs unchanged. Two shared functions select an initialized checkout:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Keep the original interpreter until the checkout&#39;s Python environment exists.</span>
+podbench_python<span class="w"> </span>/opt/app/.venv/bin/python<span class="w"> </span>-m<span class="w"> </span>myapp<span class="w"> </span>serve
+
+<span class="c1"># Run an editable Bash startup script when present; otherwise run the original command.</span>
+podbench_script<span class="w"> </span>/podbench/app/start.sh<span class="w"> </span>bash<span class="w"> </span>/opt/app/start.sh
+</pre></div>
+</div>
+<p>Pass the entire function call as <code class="docutils literal notranslate"><span class="pre">--entrypoint</span></code>. For a native executable, pass
+its command and arguments directly. Building native code remains your project’s
+responsibility. The IOC and BlueAPI chart adapters supply their known startup
+paths; other application layouts use the same runtime with explicit paths.</p>
 </section>
 <section id="initialize-an-empty-claim">
 <h2>Initialize an empty claim<a class="headerlink" href="#initialize-an-empty-claim" title="Link to this heading">#</a></h2>
@@ -663,6 +688,7 @@ the application is running normally.</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#check-existing-wiring-first">Check existing wiring first</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generate-and-deploy-the-chart-changes">Generate and deploy the chart changes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#other-application-entrypoints">Other application entrypoints</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#initialize-an-empty-claim">Initialize an empty claim</a></li>
 </ul>
   </nav></div>
