@@ -96,3 +96,22 @@ finish only necessary cleanup, and record a resume point. Keep completed stages
 and screenshots, failed assertions, unrun stages, final health, pre-existing
 edits preserved, and resources retained. Never finish an unrequested edit after
 the user has asked to leave the test for another day.
+
+## Native detach after podbench PR #270
+
+The generated gdb script now defines `hook-kill` to detach, so the C++
+extension's `kill` on Stop (Shift+F5) ends with "The program is not being
+run." and the application keeps running; validated twice on P47 mo-ioc. VS Code
+offers no separate Disconnect for this launch-type session. Still check the
+restart count and holds after every session end.
+
+## Attach exits with code 42 and a silent console
+
+Seen on P47 mo-ioc. Causes: the claim repository's own `.vscode/launch.json`
+configuration was selected instead of the Podbench launcher; a hidden native
+dialog on the run's display blocked input (raise or dismiss it with xdotool on
+that display only). Adding `"targetArchitecture": "x64"` and engine logging to
+the generated configuration through the editor made the failure visible.
+A function breakpoint on a poll routine re-hits every cycle; remove it before
+continuing, and a breakpoint on a probed health endpoint is hit by the kubelet
+every ~10 s.

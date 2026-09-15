@@ -110,7 +110,8 @@ Then list candidates with `podbench status -n NAMESPACE`, including HOTFIX
 state, and ask: **Which pods and application containers would you like me to
 test?** Wait for the selection before live mutations. Do not pick a
 substitute pod.
-Read [T11 target notes](references/t11-beamline.md) only when testing T11; verify
+Read [T11 target notes](references/t11-beamline.md) only when testing T11 and
+[P47 target notes](references/p47-beamline.md) only when testing P47; verify
 the recorded values against live state.
 
 For each selected target, identify a reachable source line, how to trigger it,

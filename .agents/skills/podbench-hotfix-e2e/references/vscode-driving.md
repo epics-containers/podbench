@@ -75,3 +75,20 @@ use only for separately requested lifecycle diagnostics with explicit cleanup.
 Close only the instance created for the run (the headless driver may support
 DevTools `Browser.close`). Capture evidence first and do not close unrelated
 user windows.
+
+## Lessons from the P47 run (2026-09-15)
+
+- The claude-sandbox driver reads `VSCODE_HEADLESS_PORT` and
+  `VSCODE_HEADLESS_WINDOW`; podbench's `tools/vscode-ui.mjs` help names
+  `PODBENCH_VSCODE_*`. Check the driver's own help before setting variables.
+- Use the palette command **Terminal: Create New Terminal (In Active
+  Workspace)**. The plain "Create New Terminal" and "Focus Terminal" commands
+  open or select a LOCAL shell inside the remote window; verify host, uid and
+  cwd in the terminal before trusting its output. Terminal output is readable
+  in snapshots only with the panel maximised.
+- Enter after typed code can be swallowed by the suggest widget; send the
+  newline through the driver's `text` action instead.
+- Xvfb displays started by the launcher cannot be killed from the agent
+  shell; close VS Code with `Browser.close` and leave the display.
+- The Read tool cannot render PNGs under the worktree; verify screenshots by
+  size and by the driver's text snapshot, and say so in the report.
