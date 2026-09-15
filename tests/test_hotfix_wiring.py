@@ -8,8 +8,13 @@ from unittest.mock import Mock
 import pytest
 
 from podbench.hotfix_core import HotfixError
-from podbench.hotfix_enable import enable
-from podbench.hotfix_values import entrypoint, ioc_entrypoint, value_blocks
+from podbench.hotfix_enable import _values, enable
+from podbench.hotfix_values import (
+    entrypoint,
+    ioc_entrypoint,
+    render_values,
+    value_blocks,
+)
 from podbench.kubectl import Kubectl
 from podbench.lifecycle_supervisor import supervisor
 
@@ -117,3 +122,25 @@ def test_enable_collision_leaves_all_files_untouched(tmp_path, pod):
     with pytest.raises(HotfixError, match="conflicts"):
         enable(kube, tmp_path, from_pod="test-0", values_prefix="application")
     assert before == {path: path.read_bytes() for path in before}
+
+
+@pytest.mark.parametrize("prefix", [None, "application"])
+def test_printed_values_use_current_ownership_markers(pod, prefix):
+    printed = render_values(pod, "test", values_prefix=prefix)
+    current = printed.split("# Add this block to values.yaml.\n", 1)[1]
+    assert "# podbench-hotfix: begin" not in current
+    assert "# podbench: begin volumes" in current
+    claim, workload = value_blocks(pod, "test")
+    first, _ = _values(current, claim, workload, prefix)
+    second, changed = _values(first, claim, workload, prefix)
+    assert not changed and second == first
+
+
+def test_inline_supervisor_requires_manual_remediation():
+    with pytest.raises(HotfixError, match="legacy wiring"):
+        entrypoint(
+            {
+                "command": ["bash", "-c"],
+                "args": ["while :; do ...; done", "podbench-supervisor", "exec app"],
+            }
+        )

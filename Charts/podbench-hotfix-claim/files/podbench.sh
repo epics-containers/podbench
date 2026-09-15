@@ -103,7 +103,11 @@ podbench_supervise() {
   }
   alive() { [ -n "$child" ] && kill -0 "$child" 2>/dev/null; }
   terminate() {
-    local until_time
+    local until_time held
+    for held in "$control"/holds/*; do
+      [ -f "$held" ] || continue
+      [ "$(cat "$held")" != hold-child ] || rm -f "$held"
+    done
     [ -n "$child" ] || return 0
     track
     kill_tree TERM
@@ -187,7 +191,7 @@ podbench_supervise() {
     fi
     action=$(cat "$request/action")
     case "$action" in
-      stop|restart|launch|hold)
+      stop|restart|launch|hold|hold-child)
         if ! "$safe"; then
           reply 'error: liveness needs hold-aware exec wiring; update and roll out'
           return
@@ -217,8 +221,12 @@ podbench_supervise() {
         spawn bash "$request/run" <&$input >&$output 2>&$error
         exec {input}<&- {output}>&- {error}>&-
         reply ok ;;
-      hold)
-        touch "$control/holds/${request##*/}"; holds; reply ok ;;
+      hold|hold-child)
+        if [ "$action" = hold-child ] && ! alive; then
+          reply 'error: application is not running'; return
+        fi
+        printf '%s\n' "$action" > "$control/holds/${request##*/}"
+        holds; reply ok ;;
       release)
         token=$(cat "$request/token")
         case "$token" in *[!a-zA-Z0-9_-]*|'')

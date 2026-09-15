@@ -13,6 +13,7 @@ from pathlib import Path
 
 from podbench.debug_model import listener, process_start
 from podbench.gdb_support import thread_db_arguments
+from podbench.lifecycle_client import action
 
 
 def _debugpy_source() -> Path | None:
@@ -41,7 +42,7 @@ def inject(
     """Inject debugpy into the recorded process, or reuse its known listener.
 
     Successful injection keeps supervised probes held until a hotfix restart.
-    Failed injection removes only a hold created by this call.
+    Failed injection releases only the token acquired by this call.
     """
     proc = Path(f"/proc/{pid}")
     if process_start(pid) != start:
@@ -96,11 +97,12 @@ def inject(
     )
     gdb.chmod(0o700)
     environment["PATH"] = f"{tools}:{environment.get('PATH', '')}"
-    hold = root / "tmp/podbench-hold"
-    supervised = manage_hold and (root / "tmp/podbench-child.pid").is_file()
-    held = hold.exists()
-    if supervised:
-        hold.touch()
+    token = ""
+    if manage_hold and (
+        (root / "tmp/podbench-control").exists()
+        or (root / "tmp/podbench-child.pid").exists()
+    ):
+        token = action(root, "hold-child")
     try:
         # GNU timeout kills the whole debugger process group if injection stalls.
         result = subprocess.run(
@@ -129,7 +131,7 @@ def inject(
                 state.write_text(
                     json.dumps({"start": start, "port": port, "inode": inode})
                 )
-                if supervised:
+                if token:
                     print(
                         "Restart the hotfix child after debugging to remove debugpy "
                         "and release the probe hold."
@@ -138,8 +140,8 @@ def inject(
             time.sleep(0.1)
         raise RuntimeError("debugpy did not open its listener")
     except BaseException:
-        if supervised and not held:
-            hold.unlink(missing_ok=True)
+        if token:
+            action(root, "release", token=token)
         raise
 
 

@@ -15,21 +15,17 @@ from .hotfix_core import HotfixError
 from .hotfix_values import (
     HOTFIX_CHART,
     HOTFIX_CHART_REPOSITORY,
-    MARKER_BEGIN,
-    MARKER_END,
     chart_version,
     ioc_entrypoint,
     value_blocks,
 )
 from .hotfix_yaml import (
-    LISTS,
     detached,
     dump,
     load,
     mapping,
     mark,
     merge,
-    remove_entries,
     unmark,
 )
 from .kubectl import Kubectl
@@ -106,23 +102,13 @@ def _values(
     current: str, claim: list[str], workload: list[str], prefix: str | None
 ) -> tuple[str, bool]:
     load(current)  # Reject invalid/duplicate YAML before processing ownership.
-    clean, legacy = unmark(current, prefix)
+    clean = unmark(current, prefix)
     document = load(clean)
     document.fa.set_block_style()
     target = mapping(document, prefix) if prefix else document
     if prefix:
         target = document[prefix] = detached(target)
-    if entries := migrate_lists(target, legacy):
-        for key in {key for key, _ in entries}:
-            target[key] = detached(target[key])
-            target[key].fa.set_block_style()
-        document = load(remove_entries(dump(document), prefix, entries))
-        target = mapping(document, prefix) if prefix else document
-    patch = load(
-        "\n".join(
-            line for line in workload if not line.startswith((MARKER_BEGIN, MARKER_END))
-        )
-    )
+    patch = load("\n".join(workload))
     owned = []
     merge(target, patch, owned)
     if HOTFIX_CHART not in document:
@@ -132,73 +118,6 @@ def _values(
     new = mark(dump(document), prefix, owned)
     load(new)  # Never write an invalid generated document.
     return new, new != current
-
-
-def migrate_lists(target: CommentedMap, marked: bool) -> list[tuple[str, int]]:
-    """Adopt only recognizable old entries in demonstrably generated wiring."""
-    args = target.get("args", [])
-    mounts = target.get("volumeMounts") or []
-    supervised = (
-        target.get("command") == ["bash", "-c"]
-        and isinstance(args, list)
-        and len(args) == 3
-        and args[1] == "podbench-supervisor"
-    )
-    wrapper = {
-        "name": "podbench-wrapper",
-        "mountPath": "/app/.venv/bin/blueapi",
-        "subPath": "blueapi",
-    }
-    if not (marked or supervised or wrapper in mounts):
-        return []
-    owned = []
-    for key in LISTS:
-        entries = target.get(key)
-        if not isinstance(entries, CommentedSeq):
-            continue
-        for index in reversed(range(len(entries))):
-            entry = entries[index]
-            if not isinstance(entry, dict):
-                continue
-            name = entry.get("name")
-            known = (
-                entry
-                in (
-                    {"name": "podbench-app", "mountPath": "/podbench/app"},
-                    {
-                        "name": "podbench-runtime",
-                        "mountPath": "/podbench/runtime",
-                        "readOnly": True,
-                    },
-                    wrapper,
-                )
-                if key == "volumeMounts"
-                else False
-            )
-            if key == "volumes" and name in (
-                "podbench-app",
-                "podbench-runtime",
-                "podbench-wrapper",
-            ):
-                field = (
-                    "persistentVolumeClaim" if name == "podbench-app" else "configMap"
-                )
-                config = entry.get(field, {})
-                if not isinstance(config, dict):
-                    continue
-                reference = "claimName" if name == "podbench-app" else "name"
-                suffix = "-podbench-project" if name == "podbench-app" else f"-{name}"
-                expected = {reference: config.get(reference)}
-                if name == "podbench-wrapper":
-                    expected["defaultMode"] = 755
-                known = (
-                    set(entry) == {"name", field}
-                    and config == expected
-                    and str(config.get(reference, "")).endswith(suffix)
-                )
-            if known:
-                owned.append((key, index))
-    return owned
 
 
 def enable(

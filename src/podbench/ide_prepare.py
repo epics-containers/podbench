@@ -24,14 +24,18 @@ def prepare(path: Path, operation: str) -> None:
         return
     pid = resolve(metadata)
     token = ""
+    created = False
     try:
-        if (root / "tmp/podbench-control/version").exists():
+        if (root / "tmp/podbench-control").exists() or (
+            root / "tmp/podbench-child.pid"
+        ).exists():
             try:
                 owner.touch(exist_ok=False)
             except FileExistsError as error:
                 raise RuntimeError(
                     "this Attach configuration already owns a session"
                 ) from error
+            created = True
             token = action(root, "hold")
             owner.write_text(token)
         if metadata["python"]:
@@ -40,7 +44,7 @@ def prepare(path: Path, operation: str) -> None:
                 process_start(pid),
                 metadata["port"],
                 path.parent,
-                manage_hold=not bool(token),
+                manage_hold=False,
             )
         else:
             shutil.copyfile(f"/proc/{pid}/exe", path.with_suffix(".exe.new"))
@@ -61,7 +65,8 @@ def prepare(path: Path, operation: str) -> None:
     except BaseException:
         if token:
             action(root, "release", token=token)
-        owner.unlink(missing_ok=True)
+        if created:
+            owner.unlink(missing_ok=True)
         raise
 
 
