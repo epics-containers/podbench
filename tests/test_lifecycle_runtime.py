@@ -13,8 +13,6 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).parents[1] / "Charts/podbench-hotfix-claim/files/podbench.sh"
-
 
 def eventually(check):
     deadline = time.monotonic() + 10
@@ -23,18 +21,6 @@ def eventually(check):
             return result
         time.sleep(0.05)
     pytest.fail("runtime did not reach the expected state within 10 seconds")
-
-
-@pytest.fixture
-def runtime(tmp_path):
-    # Isolate protocol files and checkout paths without changing runtime logic.
-    script = tmp_path / "podbench.sh"
-    script.write_text(
-        SCRIPT.read_text()
-        .replace("/tmp/podbench", str(tmp_path / "podbench"))
-        .replace("/podbench/app", str(tmp_path / "app"))
-    )
-    return script
 
 
 @pytest.mark.parametrize("kind", ["python", "bash", "binary"])
@@ -125,11 +111,13 @@ def test_restart_preserves_context_and_holds(runtime, tmp_path, kind):
         assert not (tmp_path / "podbench-child.pid").exists()
         debugger, response = request(
             "launch",
-            run="exec sleep 60\n",
+            run=f"umask > {shlex.quote(str(tmp_path / 'mask'))}\nexec sleep 60\n",
             heartbeat=str(int(time.time())),
             **{"in": "", "out": "", "err": ""},
         )
         assert response == "ok"
+        eventually(lambda: (tmp_path / "mask").exists())
+        assert (tmp_path / "mask").read_text().strip() == "0027"
         debug_pid = int((tmp_path / "podbench-child.pid").read_text())
         assert "Launch session owns" in request("restart")[1]
         (debugger / "cancel").touch()

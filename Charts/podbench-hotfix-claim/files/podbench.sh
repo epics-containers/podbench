@@ -40,6 +40,10 @@ podbench_supervise() {
     _podbench_environment+=("$_podbench_entry")
   done < <(env -0)
   local startup=$1 health=$2 safe=$3 runtime=${BASH_SOURCE[0]}
+  # Helpers share these locals through Bash's dynamic function scope.
+  local original_umask supervisor_pid control hold pidfile
+  local child= owner= request= state=normal
+  local -A descendants=()
   original_umask=$(umask)
   umask 077
   supervisor_pid=$BASHPID
@@ -52,11 +56,9 @@ podbench_supervise() {
   mkdir -m 700 "$control" "$control/requests" "$control/holds"
   printf '1\n' > "$control/version"
   printf '%s\n' "$supervisor_pid" > "$control/supervisor"
-  child= owner= request=
-  state=normal
-  declare -A descendants
   track() {
     local proc stat rest pid parent birth changed
+    local -a fields
     changed=true
     while "$changed"; do
       changed=false
@@ -78,6 +80,7 @@ podbench_supervise() {
   }
   kill_tree() {
     local pid stat rest
+    local -a fields
     for pid in "${!descendants[@]}"; do
       IFS= read -r stat 2>/dev/null < "/proc/$pid/stat" || continue
       rest=${stat##*) }; read -r -a fields <<< "$rest"
@@ -87,6 +90,7 @@ podbench_supervise() {
   }
   set_state() {
     state=$1
+    holds
     printf '%s\n' "$state" > "$control/state.new"
     mv "$control/state.new" "$control/state"
   }
@@ -99,6 +103,7 @@ podbench_supervise() {
   }
   alive() { [ -n "$child" ] && kill -0 "$child" 2>/dev/null; }
   terminate() {
+    local until_time
     [ -n "$child" ] || return 0
     track
     kill_tree TERM
@@ -114,115 +119,124 @@ podbench_supervise() {
     child=
     rm -f "$pidfile"
   }
-  normal() {
+  # Both normal startup and debugger Launch inherit the application's umask.
+  spawn() {
     (
       umask "$original_umask"
-      exec setsid env -i "${_podbench_environment[@]}" bash -c \
-        'source "$2"; podbench_launch "$1"' podbench-child "$startup" "$runtime"
+      exec setsid "$@"
     ) &
     child=$!
     printf '%s\n' "$child" > "$pidfile"
+  }
+  normal() {
+    spawn env -i "${_podbench_environment[@]}" bash -c \
+      'source "$2"; podbench_launch "$1"' podbench-child "$startup" "$runtime"
   }
   reply() {
     printf '%s\n' "$1" > "$request/response.new"
     mv "$request/response.new" "$request/response"
   }
-  trap 'terminate; exit 0' TERM INT
-  normal
-  set_state normal
-  while :; do
+  check_child() {
+    local now beat rc=0
     if [ "$state" = debugger ]; then
       track
       now=$(date +%s)
       beat=$(cat "$owner/heartbeat" 2>/dev/null || echo 0)
       if ! alive || [ -e "$owner/cancel" ] || [ "$((now - beat))" -gt 10 ]; then
-        rc=0
-        if alive; then terminate; rc=130; else wait "$child" || rc=$?; terminate; fi
+        if alive; then rc=130; else wait "$child" || rc=$?; fi
+        terminate
         printf '%s\n' "$rc" > "$owner/exit.new"
         mv "$owner/exit.new" "$owner/exit"
         owner=
         set_state stopped
-        holds
       fi
     elif [ "$state" = normal ] && ! alive; then
-      rc=0; wait "$child" || rc=$?
+      wait "$child" || rc=$?
       terminate
       exit "$rc"
     fi
+  }
+  start() {
+    local deadline expires
+    if [ "$state" = normal ]; then reply ok; return; fi
+    set_state starting
+    normal
+    sleep 0.2
+    deadline=$(cat "$request/deadline" 2>/dev/null || echo 120)
+    case "$deadline" in *[!0-9]*|'') deadline=120;; esac
+    [ "$deadline" -le 3600 ] || deadline=3600
+    expires=$((SECONDS + deadline))
+    while alive && [ "$SECONDS" -lt "$expires" ]; do
+      if [ -e "$request/cancel" ]; then
+        terminate; set_state stopped
+        reply 'error: request cancelled'; return
+      fi
+      if timeout --kill-after=1 5 bash -c "$health" >/dev/null 2>&1 && alive; then
+        set_state normal
+        reply ok; return
+      fi
+      sleep 0.2
+    done
+    terminate; set_state failed
+    reply 'error: startup/health check failed; application remains stopped and held'
+  }
+  handle_request() {
+    local action token input output error
+    if [ -e "$request/cancel" ]; then
+      reply 'error: request cancelled'; return
+    fi
+    action=$(cat "$request/action")
+    case "$action" in
+      stop|restart|launch|hold)
+        if ! "$safe"; then
+          reply 'error: liveness needs hold-aware exec wiring; update and roll out'
+          return
+        fi ;;
+    esac
+    case "$action" in
+      stop|start|restart|launch)
+        if [ "$state" = debugger ]; then
+          reply 'error: a Launch session owns the application; stop debugging first'
+          return
+        fi ;;
+    esac
+    case "$action" in
+      stop|restart)
+        set_state stopped; terminate
+        if [ "$action" = stop ]; then reply ok; else start; fi ;;
+      launch)
+        if [ "$state" = normal ]; then
+          reply 'error: application is running; run podbench stop first'; return
+        fi
+        if [ ! -f "$request/run" ]; then
+          reply 'error: missing launch payload'; return
+        fi
+        set_state debugger
+        owner=$request
+        exec {input}<> "$request/in" {output}> "$request/out" {error}> "$request/err"
+        spawn bash "$request/run" <&$input >&$output 2>&$error
+        exec {input}<&- {output}>&- {error}>&-
+        reply ok ;;
+      hold)
+        touch "$control/holds/${request##*/}"; holds; reply ok ;;
+      release)
+        token=$(cat "$request/token")
+        case "$token" in *[!a-zA-Z0-9_-]*|'')
+          reply 'error: invalid hold owner'; return;;
+        esac
+        rm -f "$control/holds/$token"; holds; reply ok ;;
+      start) start ;;
+      *) reply 'error: unknown lifecycle action' ;;
+    esac
+  }
+  trap 'terminate; exit 0' TERM INT
+  normal
+  set_state normal
+  while :; do
+    check_child
     for request in "$control"/requests/*; do
       [ -f "$request/ready" ] && [ ! -f "$request/response" ] || continue
-      if [ -e "$request/cancel" ]; then
-        reply 'error: request cancelled'; continue
-      fi
-      action=$(cat "$request/action")
-      case "$action" in
-        stop|restart|launch|hold)
-          if ! "$safe"; then
-            reply 'error: liveness needs hold-aware exec wiring; update and roll out'
-            continue
-          fi ;;
-      esac
-      case "$action" in
-        stop|start|restart|launch)
-          if [ "$state" = debugger ]; then
-            reply 'error: a Launch session owns the application; stop debugging first'
-            continue
-          fi ;;
-      esac
-      case "$action" in
-        stop|restart)
-          set_state stopped; holds; terminate
-          if [ "$action" = stop ]; then reply ok; continue; fi ;;
-        launch)
-          if [ "$state" = normal ]; then
-            reply 'error: application is running; run podbench stop first'; continue
-          fi
-          if [ ! -f "$request/run" ]; then
-            reply 'error: missing launch payload'; continue
-          fi
-          set_state debugger; holds
-          owner=$request
-          exec {input}<> "$request/in" {output}> "$request/out" {error}> "$request/err"
-          setsid bash "$request/run" <&$input >&$output 2>&$error &
-          child=$!
-          exec {input}<&- {output}>&- {error}>&-
-          printf '%s\n' "$child" > "$pidfile"
-          reply ok; continue ;;
-        hold)
-          touch "$control/holds/$(basename "$request")"; holds; reply ok; continue ;;
-        release)
-          token=$(cat "$request/token")
-          case "$token" in *[!a-zA-Z0-9_-]*|'')
-            reply 'error: invalid hold owner'; continue;;
-          esac
-          rm -f "$control/holds/$token"; holds; reply ok; continue ;;
-        start) ;;
-        *) reply 'error: unknown lifecycle action'; continue ;;
-      esac
-      if [ "$state" = normal ]; then reply ok; continue; fi
-      set_state starting; holds
-      normal
-      sleep 0.2
-      deadline=$(cat "$request/deadline" 2>/dev/null || echo 120)
-      case "$deadline" in *[!0-9]*|'') deadline=120;; esac
-      [ "$deadline" -le 3600 ] || deadline=3600
-      expires=$((SECONDS + deadline))
-      while alive && [ "$SECONDS" -lt "$expires" ]; do
-        if [ -e "$request/cancel" ]; then
-          terminate; set_state stopped; holds
-          reply 'error: request cancelled'; continue 2
-        fi
-        if timeout 5 bash -c "$health" >/dev/null 2>&1 && alive; then
-          set_state normal; holds; break
-        fi
-        sleep 0.2
-      done
-      if [ "$state" != normal ]; then
-        terminate; set_state failed; holds
-        reply 'error: startup/health check failed; application remains stopped and held'
-      else
-        reply ok
-      fi
+      handle_request
     done
     sleep 0.1
   done
