@@ -57,6 +57,12 @@ def inject(
         raise RuntimeError(
             f"port {port} is occupied by another listener; rerun after freeing it"
         )
+    if state.exists() and json.loads(state.read_text()).get("start") == start:
+        # debugpy.listen() runs once per process and its adapter exits on Disconnect.
+        raise RuntimeError(
+            f"debugpy is already loaded in PID {pid} from an earlier session; "
+            "run podbench restart to attach again"
+        )
     root = proc / "root"
     destination = root / "tmp" / f".podbench-debugpy-{os.getuid()}"
     # This /proc spelling exists in both mount namespaces. Do not resolve it.

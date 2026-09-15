@@ -73,6 +73,21 @@ def test_reconnect_reuses_only_its_recorded_listener(injection, monkeypatch, cha
     app.action.assert_not_called()
 
 
+@pytest.mark.parametrize("port", [5678, 6000])
+def test_reattach_after_disconnect_asks_for_restart(injection, monkeypatch, port):
+    # debugpy's adapter exits on Disconnect, but listen() cannot run twice.
+    app = injection
+    app.state.mkdir()
+    (app.root / "tmp/podbench-control").mkdir()
+    recorded = {"start": "start", "inode": "inode", "port": 5678}
+    (app.state / "python-123.json").write_text(json.dumps(recorded))
+    monkeypatch.setattr(ide_python, "listener", lambda port: None)
+    with pytest.raises(RuntimeError, match="already loaded in PID 123.*restart"):
+        ide_python.inject(123, "start", port, app.state)
+    app.run.assert_not_called()
+    app.action.assert_not_called()
+
+
 def test_obsolete_supervisor_is_not_held_directly(injection):
     (injection.root / "tmp/podbench-child.pid").write_text("123")
     injection.action.side_effect = RuntimeError(UPGRADE)
