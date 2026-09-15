@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Prepare a workload for hotfix &#8212; podbench 0.21.1.dev23+gd75c61bb3 documentation</title>
+    <title>Prepare a workload for hotfix &#8212; podbench 0.21.1.dev25+g13d8cd034 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=bd46f644"></script>
+    <script src="../_static/documentation_options.js?v=eb4ac42b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -551,9 +551,11 @@ contain only the invocation, never the supervisor implementation. Review all
 generated files, including new ones shown by <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">status</span> <span class="pre">--short</span></code>, then deploy through the beamline’s normal
 review and GitOps process. Wait for the replacement pod to become ready before
 continuing. Keep the workload at one replica.</p>
-<p>Re-run <code class="docutils literal notranslate"><span class="pre">hotfix</span> <span class="pre">enable</span></code> to replace older inline wiring and update the dependency
-version, then refresh your chart dependencies and deploy. Runtime-only ConfigMap
-updates may not trigger a rollout: the running supervisor has already loaded its
+<p>For <code class="docutils literal notranslate"><span class="pre">legacy</span> <span class="pre">wiring</span></code>, manually remove the old Podbench-generated wiring and
+wrappers from the service chart, preserving service-owned settings and the claim.
+Run <code class="docutils literal notranslate"><span class="pre">hotfix</span> <span class="pre">enable</span></code> against an unwired pod, or supply the original application
+command with <code class="docutils literal notranslate"><span class="pre">--entrypoint</span></code>, then refresh chart dependencies and deploy.
+Runtime-only ConfigMap updates may not trigger a rollout: the running supervisor has already loaded its
 functions, and BlueAPI also mounts its entrypoint through <code class="docutils literal notranslate"><span class="pre">subPath</span></code>. After GitOps
 deploys a runtime update, arrange an interruption window and replace the pod
 through a rollout:</p>
@@ -592,8 +594,8 @@ and comments outside the markers. Nested mappings are shared too: a marked
 remain unless the selected adapter explicitly supplies replacements. <code class="docutils literal notranslate"><span class="pre">command</span></code>
 and <code class="docutils literal notranslate"><span class="pre">args</span></code> are replaced with the generated startup wiring; use <code class="docutils literal notranslate"><span class="pre">--entrypoint</span></code>
 to specify the application command.</p>
-<p>Recognizable older Podbench wiring migrates to these markers. An unmarked entry
-with a conflicting name, or malformed markers, stops the edit before either
+<p>Obsolete wiring is not migrated automatically. An unmarked entry with a
+conflicting name, or malformed markers, stops the edit before either
 chart file is written. Resolve the conflict in the service chart and rerun.
 The first edit may normalize YAML indentation; quotes and service comments are
 retained. Keep service additions outside the marked regions.</p>
