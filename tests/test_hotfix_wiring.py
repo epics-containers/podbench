@@ -7,6 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from podbench.hotfix_core import HotfixError
 from podbench.hotfix_enable import enable
 from podbench.hotfix_values import entrypoint, ioc_entrypoint, value_blocks
 from podbench.kubectl import Kubectl
@@ -101,3 +102,18 @@ def test_enable_is_idempotent_for_chart_adapters(tmp_path, pod, prefix):
         assert "source /podbench/runtime/podbench.sh" in wrapper.read_text()
     elif prefix == "ioc-instance":
         assert "podbench_script /podbench/app/ioc/start.sh" in values.read_text()
+
+
+def test_enable_collision_leaves_all_files_untouched(tmp_path, pod):
+    chart = tmp_path / "Chart.yaml"
+    chart.write_text("dependencies:\n  - name: application\n    version: 1.0.0\n")
+    values = tmp_path / "values.yaml"
+    values.write_text(
+        "application:\n  volumes:\n    - name: podbench-app\n      emptyDir: {}\n"
+    )
+    before = {path: path.read_bytes() for path in (chart, values)}
+    kube = Mock(spec=Kubectl)
+    kube.get_pod.return_value = pod
+    with pytest.raises(HotfixError, match="conflicts"):
+        enable(kube, tmp_path, from_pod="test-0", values_prefix="application")
+    assert before == {path: path.read_bytes() for path in before}
