@@ -14,8 +14,10 @@ if (action === 'help') {
   screenshot /tmp/ide.png  Save the current window
 Set PODBENCH_VSCODE_PORT (default 9222) and, when there is more than one
 window, PODBENCH_VSCODE_WINDOW to an exact window ID from 'windows'.
-Start VS Code using tools/vscode-code, or pass that wrapper to
+On a desktop start VS Code with tools/vscode-code, or pass that wrapper to
 podbench ide vscode POD -n NAMESPACE --code "$PWD/tools/vscode-code".
+Inside an agent sandbox use the claude-sandbox vscode-headless skill instead;
+it bundles a copy of this driver and an Xvfb launcher.
 The debugging port grants control of the IDE; keep it local and close the
 dedicated VS Code instance when finished.`);
   process.exit(0);

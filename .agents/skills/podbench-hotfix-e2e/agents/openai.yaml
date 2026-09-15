@@ -1,0 +1,3 @@
+interface:
+  display_name: "Podbench hotfix E2E"
+  short_description: "Demo VS Code breakpoints and live edits with screenshots"
