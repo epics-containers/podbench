@@ -4,8 +4,9 @@ description: >-
   Demonstrate Podbench hotfix end to end on user-selected live pods through
   podbench ide vscode: hit source breakpoints, capture screenshots, edit in
   the VS Code editor, and prove the running application uses the change.
-  Print resource setup guidance before asking which pods to test, and narrate
-  progress with evidence throughout the run.
+  Ask which kubeconfig and namespace to use first, print resource setup
+  guidance, then ask which pods to test, and narrate progress with evidence
+  throughout the run.
 ---
 
 # Podbench hotfix end-to-end
@@ -40,9 +41,10 @@ Read [VS Code driving](references/vscode-driving.md) before opening the IDE,
 and [debugger preparation and recovery](references/debugging.md) before attaching.
 The latter includes a native Stop failure that must be addressed before a rerun.
 
-The user-facing opening must contain setup guidance, followed by the candidate
-pod list and the pod-selection question. After the user selects targets, carry
-out the test rather than stopping at a plan. Do not ask the user to perform UI
+The user-facing opening must ask which cluster to use, then contain setup
+guidance, followed by the candidate pod list and the pod-selection question.
+After the user selects targets, carry out the test rather than stopping at a
+plan. Do not ask the user to perform UI
 steps the available driver can perform.
 
 | Stage | Evidence required to pass |
@@ -67,26 +69,38 @@ request now.” Then: “Execution stopped at main.py:123; the stack shows the
 request handler. Here is the paused-source screenshot.” Use actual observed
 names and values, never the example as claimed evidence.
 
-## 1. Print setup guidance, then ask which pods
+## 1. Ask which cluster, print setup guidance, then ask which pods
 
-First show the user the resources below, how to prepare them, and which are
-already available. Inspect the environment and current CLI help; use explicit
-kubeconfig/context and namespace. Run the checkout with `uv run podbench` when
-appropriate. Do not assume the agent is in a jail or that setup must happen
-outside it.
+Before any cluster command, establish the target cluster. List the kubeconfig
+files found in the checkout (for example `k8s/*.kubeconfig`), any `KUBECONFIG`
+already set, and their contexts, servers and namespaces, then ask: **Which
+kubeconfig, context and namespace should this run use?** Wait for the answer.
+Do not infer the cluster from a reference file, a previous run or a handoff;
+those record one past target, and the repository may hold credentials for
+several beamlines. If reaching the chosen API server needs a VPN, SSH tunnel
+or sandbox network allowance, ask how that access is provided in the same
+question. Use the chosen kubeconfig, context and namespace explicitly in
+every `kubectl` and `podbench` command for the rest of the run.
+
+Then show the user the resources below, how to prepare them, and which are
+already available. Inspect the environment and current CLI help. Run the
+checkout with `uv run podbench` when appropriate. Do not assume the agent is
+in a jail or that setup must happen outside it.
 
 | Resource | Setup guidance |
 |---|---|
-| Cluster access and kubectl | Install kubectl, set `KUBECONFIG` to the intended scoped credentials, and verify API access. If a sandbox restricts network access, allow the actual API address using that sandbox's configuration. |
+| Network route to the API | The chosen API server may sit behind a VPN, an SSH tunnel (see `k8s/vpn-api-tunnel.sh`) or a sandbox network policy. State which route applies, whether it is currently working, and exactly what the user must provide (VPN session, SSH host and key, allowed address) if it is not. |
+| Cluster access and kubectl | Install kubectl, set `KUBECONFIG` to the credentials chosen above, and verify API access with a read-only call. Report the actual error when access fails rather than guessing at its cause. |
 | RBAC and SSH | Run `podbench doctor -n NAMESPACE`. Check exec and ephemeral-container permissions, including `kubectl auth can-i update pods --subresource=ephemeralcontainers -n NAMESPACE`. Create an SSH key if missing and use `podbench doctor --fix` to configure Podbench SSH. |
 | Hotfix workload and storage | The workload needs a writable claim at `/podbench/app`, lifecycle supervisor wiring and probes suitable for debugging pauses. Generate the service-chart change with `podbench hotfix enable services/RELEASE --from-pod POD --container NAME -n NAMESPACE`; inspect the original entrypoint, mounts and probes, then deploy through the environment's normal workflow. |
 | Editable source and runtime | Populate an empty claim with `podbench hotfix init POD --repo URL --container NAME -n NAMESPACE`. Verify the application runs the claim's source and has its dependencies. Preserve existing claim contents. Native targets also need matching source, symbols and a usable rebuild path. |
 | VS Code and UI automation | Provide VS Code, Remote-SSH, and an agent-accessible desktop/UI driver with screenshot support. For headless Linux, provide a virtual display and a VS Code UI driver; see [VS Code driving](references/vscode-driving.md). `podbench ide vscode` prepares the seat and debugger launchers. |
 
-Clearly label setup information as **guidance — no action needed now**. Check
-and handle available setup yourself. If the user must do something, label it
-**Action needed from you**, give the exact command or decision, and explain why
-you cannot do it. Do not mix hypothetical setup commands with actual requests.
+The purpose of this stage is to surface every prerequisite the user has to
+provide, so the run is not blocked later. Clearly label setup information as
+**guidance — no action needed now**. Check and handle available setup
+yourself. If the user must do something, label it **Action needed from you**,
+give the exact command or decision, and explain why you cannot do it. Do not mix hypothetical setup commands with actual requests.
 
 Print setup commands as guidance before making workload changes. Missing
 resources are setup blockers to describe precisely. Do not require GitHub
@@ -94,8 +108,8 @@ push credentials for a local editor demonstration.
 
 Then list candidates with `podbench status -n NAMESPACE`, including HOTFIX
 state, and ask: **Which pods and application containers would you like me to
-test?** Wait for the selection before live mutations. If namespace/context is
-unknown, ask for it to obtain the candidate list. Do not pick a substitute pod.
+test?** Wait for the selection before live mutations. Do not pick a
+substitute pod.
 Read [T11 target notes](references/t11-beamline.md) only when testing T11; verify
 the recorded values against live state.
 
@@ -124,6 +138,18 @@ Legacy wiring must be updated through the service repository and normal
 rollout workflow. Prepare a reviewable diff; do not commit without asking the
 user. After an authorized rollout, verify the lifecycle control channel and
 record a fresh baseline for the replacement pod.
+
+`podbench hotfix enable` is itself under test. Start from the service's
+pre-hotfix values (restore them from Git history if an older enable already
+wrote wiring) and let `hotfix enable` produce every line of the wiring. If it
+refuses, errors, or emits wiring that is incomplete, wrong or destructive (for
+example dropped volumes, probes or comments, a wrong entrypoint, a nested
+legacy loop, a missing dependency), that is a product defect: stop, record
+the exact command and output as a finding, and fix the product before
+continuing. Do not hand-merge `hotfix values` fragments, edit generated
+blocks, delete keys to get past a refusal, or otherwise work around the tool.
+A hand-assembled wiring proves nothing about `hotfix enable`, and a run built
+on one cannot pass the Apply stage.
 
 ## 3. Open VS Code and hit a breakpoint
 
