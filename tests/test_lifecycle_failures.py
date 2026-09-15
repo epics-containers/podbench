@@ -180,7 +180,10 @@ def test_debugger_completion_and_cleanup(supervise, tmp_path, ending):
                 assert (debugger / "exit").read_text().strip() == (
                     "7" if ending == "exit" else "130"
                 )
-                assert (app.control / "state").read_text().strip() == "stopped"
+                # Exit and state are published separately; wait for both.
+                eventually(
+                    lambda: (app.control / "state").read_text().strip() == "stopped"
+                )
                 assert app.hold.exists()
             if pid is not None:
                 eventually(lambda: gone(pid))
