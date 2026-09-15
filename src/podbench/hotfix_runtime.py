@@ -162,6 +162,8 @@ def restart(
     _manifest(kube, target)
     if reinstall:
         sync = (
+            f"install -m 0755 /usr/local/lib/libpodbench-ptrace.so "
+            f"{HOTFIX_PTRACE_PATH} && "
             f"cd {HOTFIX_APP_PATH} && "
             "if [ -f pyproject.toml ]; then "
             f"{_sync_python()}; "
