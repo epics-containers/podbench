@@ -31,9 +31,11 @@ WORKLOAD_KEYS = (
     "livenessProbe",
     "podSecurityContext",
 )
-# Keys an earlier `hotfix enable` may have written without markers. Present
-# together with a claim block, they are treated as generated and replaced.
+# Keys an earlier `hotfix enable` may have written without markers, or that a
+# service sets itself. Lists keep the service's entries and gain the generated
+# ones; every other key is wiring and is replaced.
 GENERATED_KEYS = (*WORKLOAD_KEYS, "readinessProbe", "startupProbe", "debug")
+LIST_KEYS = ("volumes", "volumeMounts")
 
 
 def _pod_for(
@@ -185,44 +187,76 @@ def _generated_blocks(
     return found
 
 
+def _absorb(
+    lines: list[str], block: tuple[int, int, str], body: list[str], indent: str
+) -> None:
+    """Move the generated items of one list key into the list already present."""
+    start, end, key = block
+    while end > start and not lines[end - 1].strip():
+        end -= 1
+    present = {m[1] for line in lines[start:end] if (m := _NAMED.search(line))}
+    mine = next((i for i, line in enumerate(body) if line == f"{indent}{key}:"), None)
+    if mine is None:
+        return
+    stop = _block_end(body, mine, len(body), indent)
+    items, wanted = body[mine + 1 : stop], True
+    del body[mine:stop]
+    for line in items:
+        if line.startswith(f"{indent}  - "):
+            wanted = (m := _NAMED.search(line)) is None or m[1] not in present
+        if wanted:
+            lines.insert(end, line)
+            end += 1
+
+
+_NAMED = re.compile(r"^\s*- name: (\S+)")
+
+
 def _values(
     current: str, claim: list[str], workload: list[str], prefix: str | None
 ) -> tuple[str, bool]:
     """Insert or replace hotfix blocks while preserving surrounding text.
 
-    The claim block marks a file an earlier enable has wired. With it present,
-    the generated workload is replaced in place: a marked region as one unit,
-    or, for output from a podbench that wrote no markers, each generated key
-    block where it sits, with the new marked block taking the first one's
-    place. Without a claim block, generated keys belong to the user and are
-    refused.
+    A marked region from an earlier enable is replaced as one unit. Generated
+    keys found outside it, whether written by a podbench that used no markers
+    or by the service itself, are handled per key: `volumes` and `volumeMounts`
+    keep their entries and gain the generated ones, and any other key is
+    replaced by the new marked block, which takes the first one's place.
     """
     lines = current.rstrip("\n").splitlines()
     has_claim = bool(re.search(r"(?m)^podbench-hotfix-claim:\s*$", current))
     if workload and not workload[0].startswith(MARKER_BEGIN):
         workload = marked(workload)
     indent = "  " if prefix else ""
-    if prefix:
-        start, end = _mapping_bounds(lines, prefix)
-        section = (start + 1, end) if start < len(lines) else (0, 0)
-    else:
-        start, end = 0, len(lines)
+
+    def section() -> tuple[int, int]:
+        if prefix:
+            start, end = _mapping_bounds(lines, prefix)
+            return (start + 1, end) if start < len(lines) else (0, 0)
         # Top-level layout: the claim block is not part of the workload.
-        section = (0, _mapping_bounds(lines, "podbench-hotfix-claim")[0])
+        return 0, _mapping_bounds(lines, "podbench-hotfix-claim")[0]
+
     body = [f"{indent}{line}" if line else line for line in workload]
-    span = _generated_span(lines, *section, indent)
-    blocks = [] if span else _generated_blocks(lines, *section, indent)
+    span = _generated_span(lines, *section(), indent)
     if span is not None:
-        lines[span[0] : span[1]] = body
-    elif blocks and not has_claim:
-        keys = ", ".join(dict.fromkeys(key for _, _, key in blocks))
-        raise HotfixError(f"values.yaml already sets {keys}; use hotfix values")
+        del lines[span[0] : span[1]]
+    for key in LIST_KEYS:
+        blocks = [
+            b for b in _generated_blocks(lines, *section(), indent) if b[2] == key
+        ]
+        if blocks:
+            _absorb(lines, blocks[0], body, indent)
+    blocks = [
+        b for b in _generated_blocks(lines, *section(), indent) if b[2] not in LIST_KEYS
+    ]
+    for block_start, block_end, _ in reversed(blocks):
+        del lines[block_start:block_end]
+    if span is not None:
+        lines[span[0] : span[0]] = body
     elif blocks:
-        first = blocks[0][0]
-        for block_start, block_end, _ in reversed(blocks):
-            del lines[block_start:block_end]
-        lines[first:first] = body
+        lines[blocks[0][0] : blocks[0][0]] = body
     elif prefix:
+        start, end = _mapping_bounds(lines, prefix)
         addition = [*body, ""]
         if start == len(lines):
             addition.insert(0, f"{prefix}:")

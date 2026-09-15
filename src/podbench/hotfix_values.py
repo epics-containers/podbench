@@ -215,6 +215,8 @@ def render_values(
     size: str = "10Gi",
     values_prefix: str | None = None,
 ) -> str:
+    if command is None and values_prefix == "ioc-instance":
+        command = ioc_entrypoint(pod, container_name)
     claim_lines, workload = value_blocks(
         pod,
         app,

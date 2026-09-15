@@ -80,9 +80,10 @@ hold; generic HTTP checks need `curl` and gRPC checks need `grpc_health_probe`
 in the application image.
 
 For an IOC the equivalent service directory is `services/bl47p-mo-ioc-01` and
-container `bl47p-mo-ioc-01`. Existing values such as `volumes` or `volumeMounts`
-can conflict with generated values. In that case, use `hotfix values` and merge
-the settings with the existing lists instead of replacing them.
+container `bl47p-mo-ioc-01`. Existing `volumes` and `volumeMounts` lists keep
+their entries and gain the generated ones. Other wiring keys the service already
+sets, such as `command`, `args` or probes, are replaced by the generated block;
+pass `--entrypoint` when the original command must be kept.
 
 :::{admonition} Other charts or conflicting values
 Print the wiring for manual integration:
@@ -98,7 +99,6 @@ not select code under `/podbench/app`. Review and deploy the dependency and valu
 using your chart's normal process.
 :::
 
-## Initialize an empty claim
 ## Other application entrypoints
 
 The same Bash supervisor runs Python, shell scripts, and native executables.
@@ -122,6 +122,7 @@ its command and arguments directly. Building native code remains your project's
 responsibility. The IOC and BlueAPI chart adapters supply their known startup
 paths; other application layouts use the same runtime with explicit paths.
 
+## Initialize an empty claim
 
 For BlueAPI, choose a branch or tag compatible with the deployment's configuration:
 
