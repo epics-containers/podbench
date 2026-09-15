@@ -23,6 +23,7 @@ def prepare(path: Path, operation: str) -> None:
             owner.unlink()
         return
     pid = resolve(metadata)
+    start = process_start(pid)
     token = ""
     created = False
     try:
@@ -41,7 +42,7 @@ def prepare(path: Path, operation: str) -> None:
         if metadata["python"]:
             inject(
                 pid,
-                process_start(pid),
+                start,
                 metadata["port"],
                 path.parent,
                 manage_hold=False,
@@ -54,11 +55,13 @@ def prepare(path: Path, operation: str) -> None:
             path.with_suffix(".gdb").write_text(
                 f"attach {pid}\ndefine hook-kill\ndetach\nend\n"
             )
+        if process_start(pid) != start:
+            raise RuntimeError("process changed during preparation; retry Attach")
         path.with_suffix(".session").write_text(
             json.dumps(
                 {
                     "pid": pid,
-                    "start": process_start(pid),
+                    "start": start,
                 }
             )
         )

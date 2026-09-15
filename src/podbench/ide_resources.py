@@ -119,6 +119,12 @@ def ensure_headroom(kube: Kubectl, name: str, target: str, timeout: float) -> No
             ),
         )
         pod = kube.get_pod(name)
+        if pod["metadata"]["uid"] != meta["uid"]:
+            raise KubectlError("pod was replaced while reserving IDE resources; rerun")
+        if pod.get("spec") != spec:
+            raise KubectlError(
+                "pod specification changed while reserving IDE resources; rerun"
+            )
     baseline = baselines[target]
     desired: dict[str, Any] = {key: dict(as_dict(current.get(key))) for key in HEADROOM}
     for resource in ("cpu", "memory"):
