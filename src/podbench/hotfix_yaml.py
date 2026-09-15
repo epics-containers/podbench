@@ -15,7 +15,7 @@ from ruamel.yaml.tokens import CommentToken
 from .hotfix_core import HotfixError
 
 MARKER = re.compile(r"# podbench: (begin|end) ([\w.]+)$")
-LEGACY = re.compile(r"# podbench-hotfix: (begin|end)(?: podbench .+)?$")
+
 LISTS = ("volumes", "volumeMounts")
 
 
@@ -96,11 +96,11 @@ def _spans(text):
     opened = None
     for index in sorted(comments):
         line = lines[index].strip()
-        match = MARKER.fullmatch(line) or LEGACY.fullmatch(line)
+        match = MARKER.fullmatch(line)
         if not match:
             continue
         action = match[1]
-        label = match[2] if match.re is MARKER else "legacy"
+        label = match[2]
         if action == "begin":
             if opened:
                 raise HotfixError("nested Podbench ownership markers")
@@ -139,26 +139,20 @@ def _end(node):
     return node.end_mark.line + bool(node.end_mark.column)
 
 
-def unmark(text: str, prefix: str | None) -> tuple[str, bool]:
-    """Remove owned content in this workload; retain legacy content for migration."""
+def unmark(text: str, prefix: str | None) -> str:
+    """Remove explicitly owned content in this workload."""
     tree = yaml().compose(text)
     spans = list(_spans(text))
     if tree is None:
-        return text, False
+        return text
     path = [prefix] if prefix else []
     if prefix and prefix not in load(text):
-        return text, False
+        return text
     scope_key, scope = _field(tree, path)
     lower = scope_key.start_mark.line if scope_key else 0
     lines = text.splitlines(keepends=True)
-    legacy = False
     for begin, end, label in reversed(spans):
         if not (lower <= begin < end <= scope.end_mark.line):
-            continue
-        if label == "legacy":
-            legacy = True
-            del lines[end]
-            del lines[begin]
             continue
         key, node = _field(tree, [*path, *label.split(".")])
         assert key is not None
@@ -188,7 +182,7 @@ def unmark(text: str, prefix: str | None) -> tuple[str, bool]:
                 f"ownership markers must surround complete {label} entries"
             )
         del lines[begin : end + 1]
-    return "".join(lines), legacy
+    return "".join(lines)
 
 
 def mark(text: str, prefix: str | None, owned: list[tuple[str, int | None]]) -> str:
@@ -211,19 +205,6 @@ def mark(text: str, prefix: str | None, owned: list[tuple[str, int | None]]) -> 
     lines = text.splitlines(keepends=True)
     for index in sorted(insertions, reverse=True):
         lines[index:index] = insertions[index]
-    return "".join(lines)
-
-
-def remove_entries(text, prefix, entries):
-    """Remove recognized legacy entries, retaining comments after their content."""
-    tree, spans = yaml().compose(text), []
-    for key, index in entries:
-        _, sequence = _field(tree, [prefix, key] if prefix else [key])
-        item = sequence.value[index]
-        spans.append((item.start_mark.line, _end(item)))
-    lines = text.splitlines(keepends=True)
-    for begin, end in sorted(spans, reverse=True):
-        del lines[begin:end]
     return "".join(lines)
 
 

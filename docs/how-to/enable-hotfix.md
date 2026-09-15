@@ -52,9 +52,11 @@ generated files, including new ones shown by `git status --short`, then deploy t
 review and GitOps process. Wait for the replacement pod to become ready before
 continuing. Keep the workload at one replica.
 
-Re-run `hotfix enable` to replace older inline wiring and update the dependency
-version, then refresh your chart dependencies and deploy. Runtime-only ConfigMap
-updates may not trigger a rollout: the running supervisor has already loaded its
+For `legacy wiring`, manually remove the old Podbench-generated wiring and
+wrappers from the service chart, preserving service-owned settings and the claim.
+Run `hotfix enable` against an unwired pod, or supply the original application
+command with `--entrypoint`, then refresh chart dependencies and deploy.
+Runtime-only ConfigMap updates may not trigger a rollout: the running supervisor has already loaded its
 functions, and BlueAPI also mounts its entrypoint through `subPath`. After GitOps
 deploys a runtime update, arrange an interruption window and replace the pod
 through a rollout:
@@ -101,8 +103,8 @@ remain unless the selected adapter explicitly supplies replacements. `command`
 and `args` are replaced with the generated startup wiring; use `--entrypoint`
 to specify the application command.
 
-Recognizable older Podbench wiring migrates to these markers. An unmarked entry
-with a conflicting name, or malformed markers, stops the edit before either
+Obsolete wiring is not migrated automatically. An unmarked entry with a
+conflicting name, or malformed markers, stops the edit before either
 chart file is written. Resolve the conflict in the service chart and rerun.
 The first edit may normalize YAML indentation; quotes and service comments are
 retained. Keep service additions outside the marked regions.

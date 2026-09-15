@@ -196,7 +196,7 @@ def test_debugger_completion_and_cleanup(supervise, tmp_path, ending):
 def test_unsafe_and_cancelled_requests_leave_running_child_alone(supervise):
     with supervise(safe="false") as app:
         original = app.pidfile.read_text()
-        for action in ("stop", "restart", "launch", "hold"):
+        for action in ("stop", "restart", "launch", "hold", "hold-child"):
             assert "hold-aware" in (app.request(action) / "response").read_text()
         cancelled = app.request("stop", cancel="")
         assert "cancelled" in (cancelled / "response").read_text()
@@ -227,3 +227,19 @@ def test_debugger_uses_real_fifo_streams(supervise, tmp_path):
         assert result.stdout == "out:hello\n" and result.stderr == "err:hello\n"
         eventually(lambda: (app.control / "state").read_text().strip() == "stopped")
         assert app.hold.exists() and not app.pidfile.exists()
+
+
+def test_child_hold_expires_on_restart_without_releasing_session_hold(supervise):
+    with supervise() as app:
+        session = app.request("hold").name
+        child = app.request("hold-child").name
+        assert (app.control / "holds" / child).read_text().strip() == "hold-child"
+        assert (app.request("restart") / "response").read_text().strip() == "ok"
+        assert not (app.control / "holds" / child).exists()
+        assert (app.control / "holds" / session).exists() and app.hold.exists()
+        app.request("release", token=session)
+        assert not app.hold.exists()
+        app.request("stop")
+        rejected = app.request("hold-child")
+        assert "not running" in (rejected / "response").read_text()
+        assert not (app.control / "holds" / rejected.name).exists()

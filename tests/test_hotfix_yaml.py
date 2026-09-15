@@ -128,7 +128,7 @@ def test_unmarked_collisions_are_not_adopted(entry):
         edit(f"application:\n  volumes: [{entry}]\n")
 
 
-def test_legacy_shared_lists_are_adopted_and_then_update():
+def test_obsolete_wiring_requires_manual_cleanup():
     current = (
         "application:\n  volumes:\n"
         "    - name: service-data\n      emptyDir: {}\n"
@@ -139,15 +139,8 @@ def test_legacy_shared_lists_are_adopted_and_then_update():
         "  command: [bash, -c]\n  args: [old, podbench-supervisor, 'exec app']\n"
         "  # podbench-hotfix: end\n"
     )
-    changed = [
-        line.replace("old-podbench-project", "new-podbench-project")
-        for line in WORKLOAD
-    ]
-    result = edit(current, changed)
-    assert "podbench-hotfix: begin" not in result
-    assert "new-podbench-project" in result and "service-data" in result
-    assert "# keep this service comment" in result
-    assert edit(result, changed) == result
+    with pytest.raises(HotfixError, match="unmarked volumes entry"):
+        edit(current)
 
 
 @pytest.mark.parametrize(
@@ -156,7 +149,6 @@ def test_legacy_shared_lists_are_adopted_and_then_update():
         "# podbench: begin volumes\n",
         "# podbench: end volumes\n",
         "# podbench: begin volumes\n# podbench: end args\n",
-        "# podbench-hotfix: begin podbench 0.21.0\n",
     ],
 )
 def test_malformed_markers_are_rejected(marker):

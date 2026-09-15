@@ -7,8 +7,8 @@ from podbench.hotfix_values import (
     entrypoint,
     supervised_launch,
 )
-from podbench.hotfix_yaml import load
 from podbench.lifecycle_health import unwrap_probe
+from podbench.lifecycle_supervisor import supervisor
 
 CLAIM = ["podbench-hotfix-claim:", "  enabled: true", "  size: 10Gi"]
 MARKER_BEGIN = "# podbench: begin args"
@@ -27,40 +27,6 @@ WORKLOAD_V2 = [
     "podSecurityContext:",
     "  fsGroup: 2",
 ]
-
-LEGACY = """\
-ioc-instance:
-  image: ghcr.io/example/ioc:1
-
-  volumes:
-    - name: podbench-app
-      persistentVolumeClaim:
-        claimName: x-podbench-project
-  volumeMounts:
-    - name: podbench-app
-      mountPath: /podbench/app
-  command: [bash, -c]
-  args:
-    - |
-      while :; do
-        setsid bash -c "$1" &
-      done
-    - podbench-supervisor
-    - exec bash /epics/ioc/start.sh
-  livenessProbe:
-    exec:
-      command:
-        - bash
-        - -c
-        - "[ -e /tmp/podbench-hold ] && exit 0; exec bash /epics/ioc/liveness.sh"
-    periodSeconds: 30
-  podSecurityContext:
-    fsGroup: 36261
-
-podbench-hotfix-claim:
-  enabled: true
-  size: 10Gi
-"""
 
 
 def test_fresh_insert_adds_markers_and_claim() -> None:
@@ -90,16 +56,6 @@ def test_rerun_replaces_marked_block_and_is_idempotent() -> None:
     )
     third, changed = _values(second, CLAIM, WORKLOAD_V2, "ioc-instance")
     assert not changed and third == second
-
-
-def test_legacy_unmarked_block_is_upgraded_in_place() -> None:
-    text, changed = _values(LEGACY, CLAIM, WORKLOAD_V2, "ioc-instance")
-    assert changed
-    assert "while :; do" not in text, "the legacy supervisor loop must be replaced"
-    assert "  image: ghcr.io/example/ioc:1" in text
-    assert text.count("podbench-hotfix-claim:") == 1
-    assert text.index(MARKER_BEGIN) < text.index("  - new") < text.index(MARKER_END)
-    assert text.index(MARKER_END) < text.index("podbench-hotfix-claim:")
 
 
 def test_user_owned_wiring_keys_are_replaced_and_lists_merged() -> None:
@@ -150,21 +106,11 @@ def test_dependency_pins_existing_entry_to_current_version() -> None:
     assert not changed and again == text
 
 
-def test_entrypoint_unwraps_both_supervisor_generations() -> None:
-    legacy = [
-        "bash",
-        "-c",
-        "while :; do ...; done",
-        "podbench-supervisor",
-        "if [[ -f /podbench/app/ioc/start.sh ]]; then\n"
-        "  exec bash /podbench/app/ioc/start.sh\n"
-        "else\n  exec bash -c /epics/ioc/start.sh\nfi\n",
-    ]
-    assert supervised_launch(legacy) == "bash -c /epics/ioc/start.sh"
+def test_entrypoint_unwraps_current_supervisor() -> None:
     current = [
         "bash",
         "-c",
-        "startup=...",
+        supervisor(),
         "podbench-supervisor",
         "exec python -m app serve",
     ]
@@ -185,17 +131,3 @@ def test_unwrap_probe_recovers_original_once() -> None:
         "bash",
         "/epics/ioc/liveness.sh",
     ]
-
-
-def test_legacy_upgrade_keeps_user_keys_between_generated_blocks() -> None:
-    current = (
-        "blueapi:\n  volumes:\n    - name: podbench-app\n"
-        "  ingress:\n    enabled: true\n"
-        "  debug:\n    enabled: false\n"
-        "\npodbench-hotfix-claim:\n  enabled: true\n  size: 10Gi\n"
-    )
-    text, changed = _values(current, CLAIM, WORKLOAD_V2, "blueapi")
-    assert changed
-    assert "  ingress:\n    enabled: true\n" in text
-    assert load(text)["blueapi"]["debug"] == {"enabled": False}
-    assert text.count("podbench-app") == 0 or "  - new" in text

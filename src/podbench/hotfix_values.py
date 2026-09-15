@@ -10,9 +10,15 @@ from typing import Any
 
 from . import __version__
 from .hotfix_core import HotfixError, find_container
+from .hotfix_yaml import dump, load, mark, merge
 from .launcher import target_container_name, target_uid_gid
 from .lifecycle_health import health_command, unwrap_probe
-from .lifecycle_supervisor import runtime_mounts, runtime_volumes, supervisor
+from .lifecycle_supervisor import (
+    RUNTIME_SCRIPT,
+    runtime_mounts,
+    runtime_volumes,
+    supervisor,
+)
 from .model import (
     HOTFIX_APP_PATH,
     HOTFIX_CLAIM_VOLUME,
@@ -24,17 +30,6 @@ RESTART_WINDOW_SECONDS = 120
 HOTFIX_CHART = "podbench-hotfix-claim"
 HOTFIX_CHART_REPOSITORY = "oci://ghcr.io/epics-containers/charts"
 SUPERVISOR_ARG = "podbench-supervisor"
-# Comment lines bracketing the generated workload keys in values.yaml, so a
-# later `hotfix enable` can find and replace its own output instead of
-# refusing or duplicating it. Only the prefix is matched; the rest records
-# which podbench wrote the block.
-MARKER_BEGIN = "# podbench-hotfix: begin"
-MARKER_END = "# podbench-hotfix: end"
-_EDITABLE_FALLBACK = re.compile(
-    rf"^if \[\[ -f {re.escape(HOTFIX_APP_PATH)}/\S+ \]\]; then\n"
-    r"  exec .*\nelse\n  exec (?P<original>.*)\nfi\n?$",
-    re.DOTALL,
-)
 
 
 def chart_version(version: str) -> str:
@@ -93,16 +88,13 @@ def ioc_entrypoint(pod: Mapping[str, Any], container: str | None) -> str:
 def supervised_launch(words: list[str]) -> str | None:
     """Return the application command behind a podbench supervisor, or None.
 
-    Inline and mounted supervisors run as ``bash -c SCRIPT podbench-supervisor
-    LAUNCH``. LAUNCH is ``exec COMMAND`` for a one-line command, or the
-    multi-line editable-checkout fallback whose ``else`` branch holds the
-    original command.
+    Current supervisors pass the application command as their final argument.
     """
     if len(words) != 5 or words[:2] != ["bash", "-c"] or words[3] != SUPERVISOR_ARG:
         return None
+    if not words[2].startswith(f"source {RUNTIME_SCRIPT}; podbench_supervise "):
+        raise HotfixError("legacy wiring; remove it manually before regenerating")
     launch = words[4]
-    if match := _EDITABLE_FALLBACK.match(launch):
-        return match.group("original")
     return launch.removeprefix("exec ").strip()
 
 
@@ -197,12 +189,7 @@ def value_blocks(
             f"  failureThreshold: {max(failures, restart_failures)}",
         ]
     workload += ["podSecurityContext:", f"  fsGroup: {gid}"]
-    return claim_lines, marked(workload)
-
-
-def marked(workload: list[str]) -> list[str]:
-    """Bracket generated workload lines with the markers hotfix enable rewrites."""
-    return [f"{MARKER_BEGIN} podbench {__version__}", *workload, MARKER_END]
+    return claim_lines, workload
 
 
 def render_values(
@@ -225,6 +212,10 @@ def render_values(
         gid=gid,
         size=size,
     )
+    generated = load("")
+    owned = []
+    merge(generated, load("\n".join(workload)), owned)
+    workload = mark(dump(generated), None, owned).splitlines()
     lines = [
         "",
         "",
