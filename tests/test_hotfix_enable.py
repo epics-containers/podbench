@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
 from podbench import __version__
-from podbench.hotfix_core import HotfixError
 from podbench.hotfix_enable import _dependency, _values
 from podbench.hotfix_values import (
     MARKER_BEGIN,
@@ -105,14 +102,33 @@ def test_legacy_unmarked_block_is_upgraded_in_place() -> None:
     assert text.index(MARKER_END) < text.index("podbench-hotfix-claim:")
 
 
-def test_user_owned_keys_without_claim_are_refused() -> None:
-    with pytest.raises(HotfixError, match="already sets command, args"):
-        _values(
-            "ioc-instance:\n  command: [x]\n  args: [y]\n",
-            CLAIM,
-            WORKLOAD_V2,
-            "ioc-instance",
-        )
+def test_user_owned_wiring_keys_are_replaced_and_lists_merged() -> None:
+    current = (
+        "ioc-instance:\n  image: x\n"
+        "  volumes:\n    - name: dev-shm\n      emptyDir: {}\n"
+        "  volumeMounts:\n    - name: dev-shm\n      mountPath: /dev/shm\n"
+        "  command: [x]\n  args: [y]\n"
+    )
+    workload = [
+        "volumes:",
+        "  - name: podbench-app",
+        "    persistentVolumeClaim:",
+        "      claimName: x-podbench-project",
+        "volumeMounts:",
+        "  - name: podbench-app",
+        "    mountPath: /podbench/app",
+        *WORKLOAD_V2,
+    ]
+    text, changed = _values(current, CLAIM, workload, "ioc-instance")
+    assert changed
+    assert "  command: [x]" not in text and "  args: [y]" not in text
+    assert text.count("  volumes:") == 1 and text.count("  volumeMounts:") == 1
+    assert text.index("- name: dev-shm") < text.index("- name: podbench-app")
+    assert "      mountPath: /podbench/app" in text
+    generated = text[text.index(MARKER_BEGIN) : text.index(MARKER_END)]
+    assert "volumes:" not in generated and "  - new" in generated
+    again, changed = _values(text, CLAIM, workload, "ioc-instance")
+    assert not changed and again == text
 
 
 def test_top_level_layout_replaces_between_start_and_claim() -> None:

@@ -45,7 +45,11 @@ def prepare(path: Path, operation: str) -> None:
         else:
             shutil.copyfile(f"/proc/{pid}/exe", path.with_suffix(".exe.new"))
             path.with_suffix(".exe.new").replace(path.with_suffix(".exe"))
-            path.with_suffix(".gdb").write_text(f"attach {pid}\n")
+            # The C++ extension ends every session with `kill`; detach instead
+            # so a supervised application survives Stop and Disconnect.
+            path.with_suffix(".gdb").write_text(
+                f"attach {pid}\ndefine hook-kill\ndetach\nend\n"
+            )
         path.with_suffix(".session").write_text(
             json.dumps(
                 {

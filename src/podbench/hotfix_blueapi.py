@@ -9,7 +9,7 @@ from typing import Any
 from .hotfix_core import HotfixError
 from .hotfix_values import claim_for
 from .launcher import target_container_name, target_uid_gid
-from .lifecycle_supervisor import supervisor
+from .lifecycle_supervisor import runtime_mounts, runtime_volumes, supervisor
 from .model import HOTFIX_APP_PATH, HOTFIX_CLAIM_VOLUME
 
 WRAPPER_NAME = "podbench-wrapper"
@@ -47,6 +47,7 @@ def workload(
         f"  - name: {HOTFIX_CLAIM_VOLUME}",
         "    persistentVolumeClaim:",
         f"      claimName: {claim_for(app)}",
+        *runtime_volumes(app),
         f"  - name: {WRAPPER_NAME}",
         "    configMap:",
         f"      name: {app}-{WRAPPER_NAME}",
@@ -54,6 +55,7 @@ def workload(
         "volumeMounts:",
         f"  - name: {HOTFIX_CLAIM_VOLUME}",
         f"    mountPath: {HOTFIX_APP_PATH}",
+        *runtime_mounts(),
         f"  - name: {WRAPPER_NAME}",
         f"    mountPath: {WRAPPER_PATH}",
         "    subPath: blueapi",
@@ -72,11 +74,7 @@ def workload(
 
 def write_template(service: Path) -> tuple[Path, bool]:
     path = service / "templates" / "podbench-wrapper.yaml"
-    startup = (
-        "if [ -x /podbench/app/.venv/bin/python ]; then "
-        "python=/podbench/app/.venv/bin/python; else "
-        'python=/app/.venv/bin/python; fi; exec "$python" -m blueapi '
-    )
+    startup = "podbench_python /app/.venv/bin/python -m blueapi "
     health = (
         "/app/.venv/bin/python -c 'import urllib.request; "
         'urllib.request.urlopen("http://127.0.0.1:8000/healthz", timeout=1)' + "'"

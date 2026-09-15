@@ -13,9 +13,13 @@ from .kubectl import Kubectl, KubectlError
 from .model import as_dict
 
 BASELINE = "podbench.io/ide-resources"
+# Raise only the ceiling: the seat's server idles far below any workload's own
+# request, while language servers, debuggers and builds burst. A busy beamline
+# node has little request budget left, so ask for none; a LimitRange ratio, when
+# present, lifts requests as far as the cluster insists below.
 HEADROOM = {
-    "requests": {"cpu": "2", "memory": "4Gi"},
-    "limits": {"cpu": "4", "memory": "8Gi"},
+    "requests": {"cpu": "0", "memory": "0"},
+    "limits": {"cpu": "2", "memory": "4Gi"},
 }
 
 
