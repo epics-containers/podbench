@@ -30,7 +30,12 @@ def _lines(text: str) -> list[str]:
 
 
 def _denied(namespace: str, what: str) -> AccessError:
-    who = kubectl("auth", "whoami", "-o", "name").stdout.strip() or "unknown"
+    who = (
+        kubectl(
+            "auth", "whoami", "-o", "jsonpath={.status.userInfo.username}"
+        ).stdout.strip()
+        or "unknown"
+    )
     context = kubectl("config", "current-context").stdout.strip() or "unknown"
     return AccessError(
         f"cannot {what} in {namespace!r} as {who!r} (context {context!r})"
