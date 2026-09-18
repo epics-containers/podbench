@@ -89,7 +89,7 @@ in a jail or that setup must happen outside it.
 
 | Resource | Setup guidance |
 |---|---|
-| Network route to the API | The chosen API server may sit behind a VPN, an SSH tunnel (see `k8s/vpn-api-tunnel.sh`) or a sandbox network policy. State which route applies, whether it is currently working, and exactly what the user must provide (VPN session, SSH host and key, allowed address) if it is not. |
+| Network route to the API | The chosen API server may sit behind a VPN, an SSH tunnel (see `podbench tunnel`) or a sandbox network policy. State which route applies, whether it is currently working, and exactly what the user must provide (VPN session, SSH host and key, allowed address) if it is not. |
 | Cluster access and kubectl | Install kubectl, set `KUBECONFIG` to the credentials chosen above, and verify API access with a read-only call. Report the actual error when access fails rather than guessing at its cause. |
 | RBAC and SSH | Run `podbench doctor -n NAMESPACE`. Check exec and ephemeral-container permissions, including `kubectl auth can-i update pods --subresource=ephemeralcontainers -n NAMESPACE`. Create an SSH key if missing and use `podbench doctor --fix` to configure Podbench SSH. |
 | Hotfix workload and storage | The workload needs a writable claim at `/podbench/app`, lifecycle supervisor wiring and probes suitable for debugging pauses. Generate the service-chart change with `podbench hotfix enable services/RELEASE --from-pod POD --container NAME -n NAMESPACE`; inspect the original entrypoint, mounts and probes, then deploy through the environment's normal workflow. |
