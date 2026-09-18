@@ -4,6 +4,10 @@
     "url": "https://epics-containers.github.io/podbench/main/"
   },
   {
+    "version": "0.23.0",
+    "url": "https://epics-containers.github.io/podbench/0.23.0/"
+  },
+  {
     "version": "0.22.0",
     "url": "https://epics-containers.github.io/podbench/0.22.0/"
   },
