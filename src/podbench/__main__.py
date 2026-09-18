@@ -67,6 +67,31 @@ def _lifecycle(args: Sequence[str]) -> int:
     return main(args)
 
 
+def _make_sa(args: Sequence[str]) -> int:
+    from .agent_sa import main
+
+    return main(args)
+
+
+def _delete_sa(args: Sequence[str]) -> int:
+    from .agent_sa_delete import main
+
+    return main(args)
+
+
+def _tunnel(args: Sequence[str]) -> int:
+    from .tunnel import main
+
+    return main(args)
+
+
+ACCESS_VERBS = (
+    ("make-sa", _make_sa, "provision a namespace-confined agent account"),
+    ("delete-sa", _delete_sa, "remove an agent account and its kubeconfig"),
+    ("tunnel", _tunnel, "reach the API server through an ssh tunnel"),
+)
+
+
 def _build_app() -> typer.Typer:
     app = new_app()
 
@@ -128,6 +153,14 @@ def _build_app() -> typer.Typer:
         context_settings=settings,
         rich_help_panel="Seat commands",
     )(_forward(_debug, "debug"))
+    for verb, handler, summary in ACCESS_VERBS:
+        app.command(
+            name=verb,
+            help=summary,
+            add_help_option=False,
+            context_settings=settings,
+            rich_help_panel="Cluster access",
+        )(_forward(handler, verb))
     for verb in ("start", "stop", "restart"):
         app.command(
             name=verb,

@@ -79,3 +79,6 @@ lockfiles/
 
 # Scratch space for session working files — never committed.
 tmp/
+
+# Generated kubeconfigs carry a live bearer token for a real cluster.
+*.kubeconfig

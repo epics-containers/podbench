@@ -42,5 +42,13 @@ workstation and connect your IDE to `127.0.0.1:5678`. This needs port-forward
 permission. The generated VS Code workflow handles its connection separately and
 does not need this manual forward. Restart the hotfix child after Python debugging.
 
+Cluster access commands, for [remote work](how-to/remote-work.md):
+
+| Command | Purpose |
+| --- | --- |
+| `podbench make-sa NAMESPACE --podbench[=TIERS]` | Create a namespace-confined account and its kubeconfig, then prove it is confined |
+| `podbench delete-sa NAMESPACE` | Remove that account, its bound tokens and its kubeconfig |
+| `podbench tunnel [HOST:]KUBECONFIG` | Write a kubeconfig that reaches the API through an SSH tunnel, and start the tunnel |
+
 See the [release notes](https://github.com/epics-containers/podbench/releases)
 for published versions.
