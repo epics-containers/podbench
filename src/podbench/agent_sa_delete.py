@@ -29,15 +29,32 @@ def _lines(text: str) -> list[str]:
     return [line for line in text.splitlines() if line.strip()]
 
 
+def _denied(namespace: str, what: str) -> AccessError:
+    who = kubectl("auth", "whoami", "-o", "name").stdout.strip() or "unknown"
+    context = kubectl("config", "current-context").stdout.strip() or "unknown"
+    return AccessError(
+        f"cannot {what} in {namespace!r} as {who!r} (context {context!r})"
+    )
+
+
 def _listed(namespace: str, what: str, *args: str) -> list[str]:
     result = kubectl("-n", namespace, *args)
     if result.returncode != 0:
-        who = kubectl("auth", "whoami", "-o", "name").stdout.strip() or "unknown"
-        context = kubectl("config", "current-context").stdout.strip() or "unknown"
-        raise AccessError(
-            f"cannot {what} in {namespace!r} as {who!r} (context {context!r})"
-        )
+        raise _denied(namespace, what)
     return _lines(result.stdout)
+
+
+def _existing(namespace: str, name: str) -> bool:
+    """Look before deleting: a Forbidden delete of an account that was never
+    here reads as a permission problem, when it is usually the wrong namespace.
+    """
+    result = kubectl("-n", namespace, "get", f"serviceaccount/{name}", "-o", "name")
+    if result.returncode == 0:
+        return True
+    if "NotFound" in result.stderr:
+        return False
+    error = _denied(namespace, f"read serviceaccount/{name}")
+    raise AccessError(f"{error}; was it made in another namespace?")
 
 
 def _managed(namespace: str) -> list[str]:
@@ -75,9 +92,13 @@ def delete_sa(
     require("kubectl")
     if every and user:
         raise AccessError("--all and --user are mutually exclusive")
-    accounts = _managed(namespace) if every else [account_name(user)]
+    if every:
+        accounts, wanted = _managed(namespace), "account made by make-sa"
+    else:
+        wanted = account_name(user)
+        accounts = [wanted] if _existing(namespace, wanted) else []
     if not accounts:
-        print(f"nothing to delete in {namespace}")
+        print(f"no {wanted} in {namespace}")
         return 0
 
     print(f"about to delete from namespace {namespace!r}:")

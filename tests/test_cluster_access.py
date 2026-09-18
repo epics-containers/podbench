@@ -160,3 +160,38 @@ def test_tier_flags_and_all_are_exclusive(
     monkeypatch.setattr("podbench.agent_sa.require", lambda *_: None)
     assert main(["make-sa", "ns", "--podbench", "--all"]) == 1
     assert "cannot be combined" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("stderr", "expected"),
+    [
+        ('Error from server (NotFound): serviceaccounts "agent-bob" not found', 0),
+        ("Error from server (Forbidden): cannot get resource", 1),
+    ],
+)
+def test_delete_looks_before_it_deletes(
+    stderr: str,
+    expected: int,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A missing account is reported as missing, and a namespace you cannot read
+    is reported before anything is deleted."""
+    from podbench import agent_sa_delete
+    from podbench.kubectl import CommandResult
+
+    monkeypatch.setattr(agent_sa_delete, "require", lambda *_: None)
+    monkeypatch.setattr(
+        agent_sa_delete,
+        "kubectl",
+        lambda *args, **_: CommandResult(tuple(args), 1, "", stderr),
+    )
+    monkeypatch.setattr(
+        agent_sa_delete, "kubectl_out", lambda *_, **__: pytest.fail("deleted")
+    )
+    assert main(["delete-sa", "ns", "--user", "bob", "--yes"]) == expected
+    output = capsys.readouterr()
+    if expected:
+        assert "another namespace" in output.err
+    else:
+        assert "no agent-bob in ns" in output.out
