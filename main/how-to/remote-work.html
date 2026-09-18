@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Work remotely through an SSH tunnel &#8212; podbench 0.21.1.dev29+g153cf1b91 documentation</title>
+    <title>Work remotely through an SSH tunnel &#8212; podbench 0.22.1.dev4+g751fb3fd6 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=573bdb41"></script>
+    <script src="../_static/documentation_options.js?v=f3211eed"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -494,56 +494,56 @@ Kubernetes API directly. Podbench’s SSH transport uses <code class="docutils l
 tunnel is sufficient for attach and the generated VS Code launchers.</p>
 <p>The commands use P47 as an example. Substitute your beamline module, namespace,
 SSH host and kubeconfig path.</p>
-<p>The scripts live in the <a class="reference external" href="https://github.com/epics-containers/podbench/tree/main/k8s">Podbench repository</a>,
-not the installed CLI. Run them from a checkout on each machine that needs them.
-The scripts require Bash, kubectl and OpenSSH; copying permissions with <code class="docutils literal notranslate"><span class="pre">--all</span></code>
-also requires jq.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">make-sa</span></code>, <code class="docutils literal notranslate"><span class="pre">tunnel</span></code> and <code class="docutils literal notranslate"><span class="pre">delete-sa</span></code> verbs need kubectl, and <code class="docutils literal notranslate"><span class="pre">tunnel</span></code> also
+needs OpenSSH. They run under <code class="docutils literal notranslate"><span class="pre">uvx</span></code>, so neither machine needs a checkout.
+Generated kubeconfigs hold a live token. They are written to the current
+directory, so run the verbs from a private directory such as <code class="docutils literal notranslate"><span class="pre">~/.kube</span></code>.</p>
 <section id="create-a-namespace-credential-on-the-dls-host">
 <h2>Create a namespace credential on the DLS host<a class="headerlink" href="#create-a-namespace-credential-on-the-dls-host" title="Link to this heading">#</a></h2>
 <p>On a DLS host with your own cluster credential and permission to create
 ServiceAccounts, Roles and RoleBindings:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>module<span class="w"> </span>load<span class="w"> </span>ec/p47
-git<span class="w"> </span>clone<span class="w"> </span>https://github.com/epics-containers/podbench.git
-<span class="nb">cd</span><span class="w"> </span>podbench
-./k8s/make-agent-sa.sh<span class="w"> </span>p47-beamline<span class="w"> </span>--podbench<span class="w"> </span>--duration<span class="w"> </span>24h
+<span class="nb">cd</span><span class="w"> </span>~/.kube
+uvx<span class="w"> </span>podbench<span class="w"> </span>make-sa<span class="w"> </span>p47-beamline<span class="w"> </span>--podbench<span class="w"> </span>--duration<span class="w"> </span>24h
 </pre></div>
 </div>
-<p>Use the output filename printed by the script. It creates a namespace-confined
-account named <code class="docutils literal notranslate"><span class="pre">agent-USER</span></code> and a self-contained kubeconfig under <code class="docutils literal notranslate"><span class="pre">k8s/</span></code>.
+<p>Use the output filename that <code class="docutils literal notranslate"><span class="pre">make-sa</span></code> prints. It creates a namespace-confined
+account named <code class="docutils literal notranslate"><span class="pre">agent-USER</span></code> and a self-contained kubeconfig,
+<code class="docutils literal notranslate"><span class="pre">p47-beamline-agent-USER.kubeconfig</span></code>, then checks the account can reach nothing
+outside the namespace.
 <code class="docutils literal notranslate"><span class="pre">--podbench</span></code> grants the attach/exec tier. For VS Code with this tier, add
 <code class="docutils literal notranslate"><span class="pre">--no-headroom</span></code>; the default IDE resize needs additional pod patch permissions.</p>
 <p>If the session needs your existing write permissions, use <code class="docutils literal notranslate"><span class="pre">--all</span></code> instead of
 <code class="docutils literal notranslate"><span class="pre">--podbench</span></code>. It copies your current resource permissions within this namespace,
 including secrets if you can access them. It does not copy cluster-scoped access.
 For narrower access, ask your administrator for the specific permissions reported
-by Podbench. The script’s historical tier names do not cover every current IDE
+by Podbench. The historical tier names do not cover every current IDE
 operation; <code class="docutils literal notranslate"><span class="pre">--podbench=resize</span></code> alone does not grant <code class="docutils literal notranslate"><span class="pre">patch</span> <span class="pre">pods</span></code>.</p>
 <p>The token normally lasts for the requested duration, but the server may shorten
-it; the script prints its actual expiry. Rerun with your own credential to renew.
+it; <code class="docutils literal notranslate"><span class="pre">make-sa</span></code> prints its actual expiry. Rerun with your own credential to renew.
 Keep generated kubeconfigs private and out of Git.</p>
 </section>
 <section id="start-the-tunnel-on-your-laptop">
 <h2>Start the tunnel on your laptop<a class="headerlink" href="#start-the-tunnel-on-your-laptop" title="Link to this heading">#</a></h2>
 <p>Install Podbench, kubectl and SSH locally as described in
-<a class="reference internal" href="../tutorials/setup.html"><span class="std std-doc">setup</span></a>. In a local Podbench checkout, set the actual
+<a class="reference internal" href="../tutorials/setup.html"><span class="std std-doc">setup</span></a>. Set the actual
 SSH host and <strong>absolute path printed on the DLS host</strong>. For example, replace
 <code class="docutils literal notranslate"><span class="pre">FEDID</span></code> and <code class="docutils literal notranslate"><span class="pre">DLS_HOST</span></code> in:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">REMOTE_KUBECONFIG</span><span class="o">=</span><span class="s1">&#39;FEDID@DLS_HOST:/home/FEDID/podbench/k8s/p47-beamline-agent-FEDID.kubeconfig&#39;</span>
-./k8s/vpn-api-tunnel.sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REMOTE_KUBECONFIG</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--out<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">/k8s/p47-tunnel.kubeconfig&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">/k8s/p47-tunnel.kubeconfig&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">REMOTE_KUBECONFIG</span><span class="o">=</span><span class="s1">&#39;FEDID@DLS_HOST:/home/FEDID/.kube/p47-beamline-agent-FEDID.kubeconfig&#39;</span>
+podbench<span class="w"> </span>tunnel<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REMOTE_KUBECONFIG</span><span class="s2">&quot;</span><span class="w"> </span>--out<span class="w"> </span>~/.kube/p47-tunnel.kubeconfig
+<span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>~/.kube/p47-tunnel.kubeconfig
 kubectl<span class="w"> </span>get<span class="w"> </span>pods
 podbench<span class="w"> </span>doctor<span class="w"> </span>--fix
 podbench<span class="w"> </span>ide<span class="w"> </span>vscode<span class="w"> </span>p47-blueapi-0<span class="w"> </span>--no-headroom
 </pre></div>
 </div>
-<p>The script reads the source over SSH and writes a local kubeconfig using a
+<p><code class="docutils literal notranslate"><span class="pre">tunnel</span></code> reads the source over SSH and writes a local kubeconfig using a
 loopback API address. It retains the namespace and verifies TLS using the original
 API hostname and CA. The host holding the file is also the default tunnel host;
 use <code class="docutils literal notranslate"><span class="pre">--ssh-host</span> <span class="pre">HOST</span></code> if the API must be reached through another machine.</p>
 <p>For an existing local kubeconfig, the equivalent is:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./k8s/vpn-api-tunnel.sh<span class="w"> </span>k8s/p47-beamline-agent-FEDID.kubeconfig<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--ssh-host<span class="w"> </span>FEDID@DLS_HOST<span class="w"> </span>--out<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">/k8s/p47-tunnel.kubeconfig&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>tunnel<span class="w"> </span>~/.kube/p47-beamline-agent-FEDID.kubeconfig<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--ssh-host<span class="w"> </span>FEDID@DLS_HOST<span class="w"> </span>--out<span class="w"> </span>~/.kube/p47-tunnel.kubeconfig
 </pre></div>
 </div>
 <p>Use the same <code class="docutils literal notranslate"><span class="pre">KUBECONFIG</span></code> when generating SSH aliases and opening VS Code.
@@ -560,9 +560,8 @@ also be available on your laptop; a ServiceAccount kubeconfig avoids that depend
 <h2>Reconnect and clean up<a class="headerlink" href="#reconnect-and-clean-up" title="Link to this heading">#</a></h2>
 <p>If the connection times out after a network change, stop and recreate the tunnel
 using the <strong>same source argument</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./k8s/vpn-api-tunnel.sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REMOTE_KUBECONFIG</span><span class="s2">&quot;</span><span class="w"> </span>--stop
-./k8s/vpn-api-tunnel.sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REMOTE_KUBECONFIG</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--out<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PWD</span><span class="s2">/k8s/p47-tunnel.kubeconfig&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>podbench<span class="w"> </span>tunnel<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REMOTE_KUBECONFIG</span><span class="s2">&quot;</span><span class="w"> </span>--stop
+podbench<span class="w"> </span>tunnel<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REMOTE_KUBECONFIG</span><span class="s2">&quot;</span><span class="w"> </span>--out<span class="w"> </span>~/.kube/p47-tunnel.kubeconfig
 kubectl<span class="w"> </span>--request-timeout<span class="o">=</span>10s<span class="w"> </span>get<span class="w"> </span>pods
 </pre></div>
 </div>
@@ -573,11 +572,12 @@ port if needed.</p>
 <p>When finished, close VS Code and SSH sessions, stop the tunnel, and <code class="docutils literal notranslate"><span class="pre">unset</span> <span class="pre">KUBECONFIG</span></code> to restore normal kubeconfig discovery. To revoke the temporary account,
 on the <strong>DLS host using your own credential</strong> run:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>module<span class="w"> </span>load<span class="w"> </span>ec/p47
-./k8s/delete-agent-sa.sh<span class="w"> </span>p47-beamline
+<span class="nb">cd</span><span class="w"> </span>~/.kube
+uvx<span class="w"> </span>podbench<span class="w"> </span>delete-sa<span class="w"> </span>p47-beamline
 </pre></div>
 </div>
 <p>Review its confirmation prompt. Deleting the account invalidates its tokens and
-removes the source kubeconfig there; also remove the local tunnel kubeconfig when
+removes the source kubeconfig from the current directory; also remove the local tunnel kubeconfig when
 no longer needed.</p>
 </section>
 </section>
