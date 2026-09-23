@@ -25,25 +25,14 @@ release = podbench.__version__
 # The short X.Y version.
 if "+" in release:
     # Not on a tag, use branch name
-    root = Path(__file__).absolute().parent.parent
     git_branch = check_output("git branch --show-current".split(), cwd=root)
     version = git_branch.decode().strip()
 else:
     version = release
 
 extensions = [
-    # Use this for generating API docs
-    "sphinx.ext.autodoc",
-    # and making summary tables at the top of API docs
-    "sphinx.ext.autosummary",
-    # This can parse google style docstrings
-    "sphinx.ext.napoleon",
-    # For linking to external sphinx documentation
-    "sphinx.ext.intersphinx",
-    # Add links to source code in API docs
-    "sphinx.ext.viewcode",
-    # Adds the inheritance-diagram generation directive
-    "sphinx.ext.inheritance_diagram",
+    # Render the architecture diagram
+    "sphinx.ext.graphviz",
     # Add a copy button to each code block
     "sphinx_copybutton",
     # For the card element
@@ -58,37 +47,6 @@ myst_enable_extensions = ["colon_fence"]
 # If true, Sphinx will warn about all references where the target cannot
 # be found.
 nitpicky = True
-
-# A list of (type, target) tuples (by default empty) that should be ignored when
-# generating warnings in "nitpicky mode". Note that type should include the
-# domain name if present. Example entries would be ('py:func', 'int') or
-# ('envvar', 'LD_LIBRARY_PATH').
-nitpick_ignore = [
-    ("py:class", "NoneType"),
-    ("py:class", "'str'"),
-    ("py:class", "'float'"),
-    ("py:class", "'int'"),
-    ("py:class", "'bool'"),
-    ("py:class", "'object'"),
-    ("py:class", "'id'"),
-    ("py:class", "typing_extensions.Literal"),
-]
-
-# Both the class’ and the __init__ method’s docstring are concatenated and
-# inserted into the main body of the autoclass directive
-autoclass_content = "both"
-
-# Order the members by the order they appear in the source code
-autodoc_member_order = "bysource"
-
-# Don't inherit docstrings from baseclasses
-autodoc_inherit_docstrings = False
-
-# Document only what is in __all__
-autosummary_ignore_module_all = False
-
-# Add any paths that contain templates here, relative to this directory.
-templates_path = []
 
 # Output graphviz directive produced images in a scalable format
 graphviz_output_format = "svg"
@@ -108,13 +66,6 @@ exclude_patterns = ["_build"]
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
 
-# This means you can link things like `str` and `asyncio` to the relevant
-# docs in the python documentation.
-intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
-
-# A dictionary of graphviz graph attributes for inheritance diagrams.
-inheritance_graph_attrs = {"rankdir": "TB"}
-
 # Ignore localhost links for periodic check that links in docs are valid
 linkcheck_ignore = [r"http://(?:localhost|127\.0\.0\.1):\d+/"]
 
@@ -132,15 +83,7 @@ html_theme = "pydata_sphinx_theme"
 github_repo = "podbench"
 github_user = "epics-containers"
 switcher_json = f"https://{github_user}.github.io/{github_repo}/switcher.json"
-# Theme options for pydata_sphinx_theme
-# We don't check switcher because there are 3 possible states for a repo:
-# 1. New project, docs are not published so there is no switcher
-# 2. Existing project with latest copier template, switcher exists and works
-# 3. Existing project with old copier template that makes broken switcher,
-#    switcher exists but is broken
-# Point 3 makes checking switcher difficult, because the updated copier template
-# will fix the switcher at the end of the docs workflow, but never gets a chance
-# to complete as the docs build warns and fails.
+# The switcher is not checked: the docs workflow publishes it after the build.
 html_theme_options = {
     "logo": {
         "text": project,
