@@ -26,6 +26,7 @@ from .hotfix_yaml import (
     mapping,
     mark,
     merge,
+    prune,
     unmark,
 )
 from .kubectl import Kubectl
@@ -102,12 +103,13 @@ def _values(
     current: str, claim: list[str], workload: list[str], prefix: str | None
 ) -> tuple[str, bool]:
     load(current)  # Reject invalid/duplicate YAML before processing ownership.
-    clean = unmark(current, prefix)
+    clean, removed = unmark(current, prefix)
     document = load(clean)
     document.fa.set_block_style()
     target = mapping(document, prefix) if prefix else document
     if prefix:
         target = document[prefix] = detached(target)
+    prune(target, removed)
     patch = load("\n".join(workload))
     owned = []
     merge(target, patch, owned)

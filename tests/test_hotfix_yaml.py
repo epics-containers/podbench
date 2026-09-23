@@ -244,3 +244,26 @@ def test_flow_document_can_be_edited():
     result = edit('{application: {volumes: []}, other: {image: "keep"}}\n')
     assert load(result)["other"] == {"image": "keep"}
     assert edit(result) == result
+
+
+def test_dropped_generated_fields_do_not_leave_null_parents():
+    # A null parent would delete the chart's own default (e.g. its probes).
+    probes = [
+        "readinessProbe:",
+        "  httpGet:",
+        "  exec:",
+        "    command: [old-ready]",
+        "startupProbe:",
+        "  exec:",
+        "    command: [old-start]",
+    ]
+    old = edit("application:\n  image: keep\n", [*WORKLOAD, *probes])
+    service = old.replace(
+        "  startupProbe:\n", "  startupProbe:\n    failureThreshold: 18\n"
+    )
+    new = edit(service)
+    application = load(new)["application"]
+    assert "readinessProbe" not in application
+    assert application["startupProbe"] == {"failureThreshold": 18}
+    assert application["image"] == "keep"
+    assert edit(new) == new
