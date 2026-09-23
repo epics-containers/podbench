@@ -16,15 +16,21 @@ WRAPPER_NAME = "podbench-wrapper"
 WRAPPER_PATH = "/app/.venv/bin/blueapi"
 
 
-def _probe(*, allow_hold: bool) -> list[str]:
-    guard = "[ -e /tmp/podbench-hold ] || " if allow_hold else ""
+def _liveness_probe() -> list[str]:
+    """A liveness probe that passes while the application is held.
+
+    Only liveness is replaced. Startup and readiness stay the chart's httpGet
+    probes: the supervisor starts without a hold, and readiness should fail
+    while the application is held. The service therefore owns startup
+    headroom in its own values, which regeneration does not overwrite.
+    """
     return [
         "exec:",
         "  command:",
         "    - bash",
         "    - -c",
         "    - >-",
-        f"      {guard}exec /app/.venv/bin/python -c",
+        "      [ -e /tmp/podbench-hold ] || exec /app/.venv/bin/python -c",
         "      'import urllib.request;",
         '      urllib.request.urlopen("http://127.0.0.1:8000/healthz", timeout=1)\'',
     ]
@@ -61,13 +67,7 @@ def workload(
         "    subPath: blueapi",
         "livenessProbe:",
         "  httpGet: null",
-        *[f"  {line}" for line in _probe(allow_hold=True)],
-        "readinessProbe:",
-        "  httpGet: null",
-        *[f"  {line}" for line in _probe(allow_hold=False)],
-        "startupProbe:",
-        "  httpGet: null",
-        *[f"  {line}" for line in _probe(allow_hold=True)],
+        *[f"  {line}" for line in _liveness_probe()],
     ]
     return lines
 
