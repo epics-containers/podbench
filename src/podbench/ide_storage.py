@@ -30,17 +30,31 @@ def storage_budget(pod: dict[str, Any]) -> tuple[Fraction | None, Fraction, bool
     in which case the kubelet does not evict the pod for its total usage.
     """
     spec = as_dict(pod.get("spec"))
-    # Only restartable (sidecar) init containers run alongside the others.
-    running = [*spec.get("containers", [])] + [
-        c
-        for c in spec.get("initContainers", [])
-        if as_dict(c).get("restartPolicy") == "Always"
-    ]
-    limits = [
-        as_dict(as_dict(as_dict(c).get("resources")).get("limits")).get(STORAGE)
-        for c in running
-    ]
-    set_limits = [quantity(str(value)) for value in limits if value is not None]
+
+    def limit_of(container: Any) -> Fraction | None:
+        limits = as_dict(as_dict(as_dict(container).get("resources")).get("limits"))
+        value = limits.get(STORAGE)
+        return None if value is None else quantity(str(value))
+
+    # Mirror the kubelet's PodLimits: app containers plus restartable (sidecar)
+    # init containers run together; each one-shot init container runs with only
+    # the sidecars started before it, and the pod limit is the larger of those.
+    any_set = False
+    sidecars = Fraction(0)
+    init_peak = Fraction(0)
+    for container in spec.get("initContainers", []):
+        value = limit_of(container)
+        any_set = any_set or value is not None
+        if as_dict(container).get("restartPolicy") == "Always":
+            sidecars += value or 0
+        else:
+            init_peak = max(init_peak, sidecars + (value or 0))
+    running = Fraction(0)
+    for container in spec.get("containers", []):
+        value = limit_of(container)
+        any_set = any_set or value is not None
+        running += value or 0
+    pod_limit = max(running + sidecars, init_peak) if any_set else None
     reserved, unbounded = Fraction(0), False
     for volume in spec.get("volumes", []):
         empty_dir = as_dict(volume).get("emptyDir")
@@ -51,7 +65,7 @@ def storage_budget(pod: dict[str, Any]) -> tuple[Fraction | None, Fraction, bool
             unbounded = True
         else:
             reserved += quantity(str(size))
-    return (sum(set_limits, Fraction(0)) if set_limits else None), reserved, unbounded
+    return pod_limit, reserved, unbounded
 
 
 def warn_if_seat_may_not_fit(pod: dict[str, Any], target: str) -> None:
@@ -59,14 +73,15 @@ def warn_if_seat_may_not_fit(pod: dict[str, Any], target: str) -> None:
     limit, reserved, unbounded = storage_budget(pod)
     if limit is None or (not unbounded and limit - reserved >= SEAT_STORAGE):
         return
-    volumes = (
-        "emptyDir volumes without a sizeLimit"
-        if unbounded
-        else f"emptyDir sizeLimits of {_format(reserved, STORAGE)}"
-    )
+    if unbounded:
+        volumes = " and it has emptyDir volumes without a sizeLimit"
+    elif reserved:
+        volumes = f" and it has emptyDir sizeLimits of {_format(reserved, STORAGE)}"
+    else:
+        volumes = ""
     console.print(
-        f"warning: this pod's {STORAGE} limit is {_format(limit, STORAGE)} and "
-        f"it has {volumes}; the VS Code seat needs about "
+        f"warning: this pod's {STORAGE} limit is {_format(limit, STORAGE)}"
+        f"{volumes}; a new VS Code seat needs about "
         f"{_format(SEAT_STORAGE, STORAGE)} more. If the kubelet evicts the pod, "
         f"raise {target}'s limits.{STORAGE} in the service values "
         "(it cannot be resized in place).",
@@ -78,7 +93,9 @@ def explain_lost_pod(kube: Kubectl, name: str, uid: str) -> str | None:
     """Say why the pod a seat was added to has gone, or None if it has not."""
     try:
         live = kube.get_pod(name)
-    except KubectlError:
+    except KubectlError as error:
+        if not _not_found(error):
+            return None  # e.g. expired credentials: let the original error show.
         live = {}
     status = as_dict(live.get("status"))
     if as_dict(live.get("metadata")).get("uid") == uid:
@@ -101,4 +118,11 @@ def explain_lost_pod(kube: Kubectl, name: str, uid: str) -> str | None:
     messages = [as_dict(e).get("message", "") for e in events if isinstance(e, dict)]
     if messages:
         return f"pod {name} was evicted: {messages[-1]}"
+    if not live:
+        return f"pod {name} no longer exists (it was uid {uid})"
     return f"pod {name} was replaced (it is no longer uid {uid})"
+
+
+def _not_found(error: KubectlError) -> bool:
+    detail = error.result.stderr if error.result else str(error)
+    return "NotFound" in detail or "not found" in detail

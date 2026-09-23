@@ -9,6 +9,8 @@ import pytest
 from podbench import ide_storage as storage
 from podbench.kubectl import KubectlError
 
+STORAGE = "ephemeral-storage"
+
 
 def _pod(limit=None, volumes=(), sidecar_limit=None):
     resources = {"limits": {"ephemeral-storage": limit}} if limit else {}
@@ -43,8 +45,14 @@ def test_budget_sums_running_container_limits_and_disk_empty_dirs():
         [_empty_dir("1Gi"), _empty_dir("4Gi", medium="Memory"), {"name": "pvc"}],
         sidecar_limit="1Gi",
     )
-    # The one-shot init container's 9Gi does not add to the running total.
-    assert storage.storage_budget(pod) == (_gib(3), _gib(1), False)
+    # As the kubelet's PodLimits: max(app + sidecar = 3Gi, one-shot init 9Gi).
+    assert storage.storage_budget(pod) == (_gib(9), _gib(1), False)
+
+
+def test_budget_one_shot_init_below_running_total_does_not_count():
+    pod = _pod("2Gi", sidecar_limit="1Gi")
+    pod["spec"]["initContainers"][0]["resources"]["limits"][STORAGE] = "1Gi"
+    assert storage.storage_budget(pod) == (_gib(3), 0, False)
 
 
 def test_budget_without_limits_is_not_evictable():
@@ -79,18 +87,33 @@ def test_warns_when_empty_dirs_leave_too_little(capsys):
 
 
 def test_warns_when_an_empty_dir_is_unbounded(capsys):
-    # The #269 case: a disk-backed venv emptyDir charged to a 2Gi pod budget.
     out = _warned(capsys, _pod("8Gi", [_empty_dir()]))
     assert "emptyDir volumes without a sizeLimit" in out
 
 
+def test_warns_for_the_issue_269_shape(capsys):
+    # BlueAPI: venv emptyDir sizeLimit 5Gi plus 500Mi and 5Mi under a 2Gi limit.
+    volumes = [_empty_dir("5Gi"), _empty_dir("500Mi"), _empty_dir("5Mi")]
+    out = _warned(capsys, _pod("2Gi", volumes))
+    assert "emptyDir sizeLimits of" in out
+
+
+def test_warning_without_empty_dirs_omits_them(capsys):
+    out = _warned(capsys, _pod("1Gi"))
+    assert "ephemeral-storage limit is 1Gi; a new VS Code seat" in out
+    assert "emptyDir" not in out
+
+
 class FakeKube:
-    def __init__(self, pod=None, events=()):
+    def __init__(self, pod=None, events=(), get_error=None):
         self.pod, self.events, self.calls = pod, list(events), []
+        self.get_error = get_error
 
     def get_pod(self, name):
+        if self.get_error:
+            raise KubectlError(self.get_error)
         if self.pod is None:
-            raise KubectlError(f'pods "{name}" not found')
+            raise KubectlError(f'Error from server (NotFound): pods "{name}" not found')
         return self.pod
 
     def run(self, *args, check=True):
@@ -128,3 +151,14 @@ def test_replaced_pod_is_explained_from_eviction_events(replacement):
 def test_replaced_pod_without_events_says_it_was_replaced():
     kube = FakeKube({"metadata": {"uid": "u2"}})
     assert _explain(kube) == ("pod p was replaced (it is no longer uid u1)")
+
+
+def test_deleted_pod_without_events_says_it_no_longer_exists():
+    assert _explain(FakeKube()) == "pod p no longer exists (it was uid u1)"
+
+
+def test_unreadable_pod_is_not_reported_as_lost():
+    # An expired token must surface as itself, not as a phantom eviction.
+    kube = FakeKube(get_error="error: You must be logged in (Unauthorized)")
+    assert _explain(kube) is None
+    assert kube.calls == []
