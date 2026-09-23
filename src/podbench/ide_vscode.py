@@ -13,6 +13,7 @@ from urllib.parse import quote
 from .cli import console
 from .doctor import include_is_active
 from .ide_resources import ensure_headroom
+from .ide_storage import explain_lost_pod, warn_if_seat_may_not_fit
 from .kubectl import Kubectl, KubectlError, run_subprocess
 from .launcher import attach, resolve_pod_name, target_container_name
 from .ssh_agent import PYTHON
@@ -97,11 +98,49 @@ def open_vscode(
         if result.stdout.strip():
             git_identity[key] = result.stdout.strip()
     pod = resolve_pod_name(pod)
-    target = target_container_name(kube.get_pod(pod), target)
+    live = kube.get_pod(pod)
+    target = target_container_name(live, target)
     if no_headroom:
         console.print("Using existing pod resources (--no-headroom); skipping resize.")
     else:
         ensure_headroom(kube, pod, target, timeout)
+    warn_if_seat_may_not_fit(live, target)
+    try:
+        _open_seat(
+            kube,
+            pod,
+            target,
+            image,
+            identity,
+            config_dir,
+            code,
+            timeout,
+            git_identity,
+            forward_agent=forward_agent,
+        )
+    except KubectlError as error:
+        # An eviction otherwise surfaces only as a failed ssh or exec exit code.
+        lost = explain_lost_pod(kube, pod, live["metadata"]["uid"])
+        if lost:
+            raise KubectlError(
+                f"{lost}; the seat and its VS Code server went with it"
+            ) from error
+        raise
+
+
+def _open_seat(
+    kube: Kubectl,
+    pod: str,
+    target: str,
+    image: str,
+    identity: str,
+    config_dir: str | None,
+    code: str,
+    timeout: float,
+    git_identity: dict[str, str],
+    *,
+    forward_agent: bool,
+) -> None:
     console.print("Preparing the debug seat and SSH...")
     session = attach(kube, pod, target=target, image=image, ssh=True, timeout=timeout)
     if missing_ssh_capabilities(kube, session.seat.pod, session.seat.container) != ():
