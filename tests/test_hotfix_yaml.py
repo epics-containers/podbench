@@ -258,6 +258,11 @@ def test_dropped_generated_fields_do_not_leave_null_parents():
         "    command: [old-start]",
     ]
     old = edit("application:\n  image: keep\n", [*WORKLOAD, *probes])
+    no_override = load(edit(old))["application"]
+    assert "readinessProbe" not in no_override
+    assert "startupProbe" not in no_override
+    assert no_override["image"] == "keep"
+
     service = old.replace(
         "  startupProbe:\n", "  startupProbe:\n    failureThreshold: 18\n"
     )
