@@ -139,15 +139,16 @@ def _end(node):
     return node.end_mark.line + bool(node.end_mark.column)
 
 
-def unmark(text: str, prefix: str | None) -> str:
-    """Remove explicitly owned content in this workload."""
+def unmark(text: str, prefix: str | None) -> tuple[str, list[str]]:
+    """Remove explicitly owned content in this workload; report removed labels."""
     tree = yaml().compose(text)
     spans = list(_spans(text))
     if tree is None:
-        return text
+        return text, []
     path = [prefix] if prefix else []
     if prefix and prefix not in load(text):
-        return text
+        return text, []
+    removed = []
     scope_key, scope = _field(tree, path)
     lower = scope_key.start_mark.line if scope_key else 0
     lines = text.splitlines(keepends=True)
@@ -182,7 +183,25 @@ def unmark(text: str, prefix: str | None) -> str:
                 f"ownership markers must surround complete {label} entries"
             )
         del lines[begin : end + 1]
-    return "".join(lines)
+        removed.append(label)
+    return "".join(lines), removed
+
+
+def prune(target: CommentedMap, labels: list[str]) -> None:
+    """Drop keys left empty by unmark, so null does not delete chart defaults."""
+    for label in labels:
+        parts = label.split(".")
+        for depth in range(len(parts), 0, -1):
+            parent = target
+            for part in parts[: depth - 1]:
+                parent = parent.get(part) if isinstance(parent, CommentedMap) else None
+            key = parts[depth - 1]
+            if not isinstance(parent, CommentedMap) or key not in parent:
+                continue
+            if parent[key] is None or parent[key] == {}:
+                del parent[key]
+            else:
+                break
 
 
 def mark(text: str, prefix: str | None, owned: list[tuple[str, int | None]]) -> str:

@@ -105,6 +105,10 @@ def test_enable_is_idempotent_for_chart_adapters(tmp_path, pod, prefix):
         wrapper = tmp_path / "templates/podbench-wrapper.yaml"
         assert "podbench_python /app/.venv/bin/python -m blueapi" in wrapper.read_text()
         assert "source /podbench/runtime/podbench.sh" in wrapper.read_text()
+        # The chart keeps its own startup/readiness probes so services own them.
+        assert "livenessProbe:" in values.read_text()
+        assert "startupProbe" not in values.read_text()
+        assert "readinessProbe" not in values.read_text()
     elif prefix == "ioc-instance":
         assert "podbench_script /podbench/app/ioc/start.sh" in values.read_text()
 
