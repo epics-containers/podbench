@@ -10,7 +10,12 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install uv
+<<<<<<< before updating
         uses: astral-sh/setup-uv@v10.1.0
+=======
+        uses: astral-sh/setup-uv@v10.3.2
+
+>>>>>>> after updating
       - name: Build sdist and wheel
         run: >
           export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) &&
