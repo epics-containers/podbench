@@ -98,29 +98,36 @@ def explain_lost_pod(kube: Kubectl, name: str, uid: str) -> str | None:
             return None  # e.g. expired credentials: let the original error show.
         live = {}
     status = as_dict(live.get("status"))
-    if as_dict(live.get("metadata")).get("uid") == uid:
-        if status.get("reason") != "Evicted":
-            return None
+    same_pod = as_dict(live.get("metadata")).get("uid") == uid
+    if same_pod and status.get("reason") == "Evicted":
         return f"pod {name} was evicted: {status.get('message', '')}".rstrip(": ")
-    result = kube.run(
-        "get",
-        "events",
-        "--field-selector",
-        f"involvedObject.uid={uid},reason=Evicted",
-        "-o",
-        "json",
-        check=False,
-    )
-    try:
-        events = json.loads(result.stdout).get("items", []) if result.stdout else []
-    except (ValueError, AttributeError):
-        events = []
-    messages = [as_dict(e).get("message", "") for e in events if isinstance(e, dict)]
+    # The kubelet posts the Evicted status after killing the containers, so a
+    # pod that still looks Running may already be going: check its events too.
+    messages = _eviction_messages(kube, uid)
     if messages:
         return f"pod {name} was evicted: {messages[-1]}"
+    if same_pod:
+        return None
     if not live:
         return f"pod {name} no longer exists (it was uid {uid})"
     return f"pod {name} was replaced (it is no longer uid {uid})"
+
+
+def _eviction_messages(kube: Kubectl, uid: str) -> list[str]:
+    try:
+        result = kube.run(
+            "get",
+            "events",
+            "--field-selector",
+            f"involvedObject.uid={uid},reason=Evicted",
+            "-o",
+            "json",
+            check=False,
+        )
+        events = json.loads(result.stdout).get("items", []) if result.stdout else []
+    except (KubectlError, ValueError, AttributeError):
+        return []  # e.g. a timeout: let the original error show.
+    return [as_dict(e).get("message", "") for e in events if isinstance(e, dict)]
 
 
 def _not_found(error: KubectlError) -> bool:

@@ -7,7 +7,7 @@ from typing import Any, cast
 import pytest
 
 from podbench import ide_storage as storage
-from podbench.kubectl import KubectlError
+from podbench.kubectl import KubectlError, KubectlTimeoutError
 
 STORAGE = "ephemeral-storage"
 
@@ -105,9 +105,9 @@ def test_warning_without_empty_dirs_omits_them(capsys):
 
 
 class FakeKube:
-    def __init__(self, pod=None, events=(), get_error=None):
+    def __init__(self, pod=None, events=(), get_error=None, events_error=None):
         self.pod, self.events, self.calls = pod, list(events), []
-        self.get_error = get_error
+        self.get_error, self.events_error = get_error, events_error
 
     def get_pod(self, name):
         if self.get_error:
@@ -118,6 +118,8 @@ class FakeKube:
 
     def run(self, *args, check=True):
         self.calls.append(args)
+        if self.events_error:
+            raise self.events_error
         return SimpleNamespace(stdout=json.dumps({"items": self.events}))
 
 
@@ -128,7 +130,24 @@ def _explain(kube: FakeKube) -> str | None:
 def test_same_running_pod_is_not_lost():
     kube = FakeKube({"metadata": {"uid": "u1"}, "status": {"phase": "Running"}})
     assert _explain(kube) is None
-    assert kube.calls == []
+
+
+def test_running_pod_with_an_eviction_event_is_being_evicted():
+    # The kubelet kills the containers before it posts the Evicted status.
+    kube = FakeKube(
+        {"metadata": {"uid": "u1"}, "status": {"phase": "Running"}},
+        [{"message": "Pod ephemeral local storage ..."}],
+    )
+    assert _explain(kube) == ("pod p was evicted: Pod ephemeral local storage ...")
+    assert "involvedObject.uid=u1,reason=Evicted" in kube.calls[0]
+
+
+def test_event_lookup_timeout_does_not_hide_the_original_error():
+    kube = FakeKube(
+        {"metadata": {"uid": "u1"}, "status": {"phase": "Running"}},
+        events_error=KubectlTimeoutError("command timed out after 30s"),
+    )
+    assert _explain(kube) is None
 
 
 def test_evicted_pod_still_present_reports_its_message():
