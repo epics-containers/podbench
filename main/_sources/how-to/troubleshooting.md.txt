@@ -20,6 +20,7 @@ kubectl get pods
 | IDE resize fails | The cluster needs in-place resize, `patch pods/resize`, `patch pods` and `list limitranges`, plus enough resources. Use `--no-headroom` only if the pod already has room. |
 | Debugger fails or starts another application | Choose the generated **Podbench: Attach — …** or **Podbench: Launch — …** entry in Run and Debug; it supplies the seat's filesystem mappings and debugger setup. |
 | Process exited / PID changed | Retry the same Attach configuration; it resolves the current process. If there is no match, Start the application. If ambiguous, identify the duplicate invocation. |
+| Pod evicted during `ide vscode` | The seat's VS Code server (about 1.5 GiB) is charged to the pod's `ephemeral-storage` limit together with disk-backed `emptyDir` volumes, and that limit cannot be resized in place. Raise the target container's `limits.ephemeral-storage` in the service values; `ide vscode` warns before adding a seat when the budget looks too small. |
 | Pod replaced | Rerun `podbench ide vscode POD` from your workstation to connect to a seat in the replacement pod. Retrying Attach in the old workspace is not enough. |
 | Python breakpoint is unbound | Check the selected server invocation and source path. Use `/podbench/app` for hotfix source, or the target filesystem shown in the generated workspace for image source. |
 | GDB shows addresses without source | Use matching debug symbols and source. An IOC developer image helps; a runtime image may have stripped them. |
