@@ -33,6 +33,11 @@ jobs:
           helm plugin install https://github.com/losisin/helm-values-schema-json \
             --version "${HELM_SCHEMA_PLUGIN_VERSION}"
       - name: Install uv
+<<<<<<< before updating
         uses: astral-sh/setup-uv@v10.1.0
+=======
+        uses: astral-sh/setup-uv@v10.3.2
+
+>>>>>>> after updating
       - name: Run tox
         run: uv run --locked tox -e ${{ inputs.tox }}
