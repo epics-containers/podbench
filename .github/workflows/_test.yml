@@ -23,7 +23,12 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install uv
+<<<<<<< before updating
         uses: astral-sh/setup-uv@v10.1.0
+=======
+        uses: astral-sh/setup-uv@v10.3.2
+
+>>>>>>> after updating
       - name: Run tests
         run: uv run --locked tox -e tests
       - name: Upload coverage to Codecov

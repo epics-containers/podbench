@@ -21,7 +21,11 @@ jobs:
         run: sudo apt-get install graphviz
 
       - name: Install uv
+<<<<<<< before updating
         uses: astral-sh/setup-uv@v10.1.0
+=======
+        uses: astral-sh/setup-uv@v10.3.2
+>>>>>>> after updating
 
       - name: Build docs
         run: uv run --locked tox -e docs
